@@ -3,3 +3,4 @@ pandas
 reportlab
 korean-saju
 korean-lunar-calendar
+openai
