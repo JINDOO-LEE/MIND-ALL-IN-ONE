@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.5"
+APP_VERSION = "3.6.6"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -8191,6 +8191,8 @@ st.markdown(
     }
     .brand-title-hope-row {
         margin-top: 0.12em;
+        width: 100%;
+        text-align: center;
     }
 
     @media (max-width: 560px) {
