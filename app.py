@@ -80,7 +80,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.0"
+APP_VERSION = "3.6.1"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
