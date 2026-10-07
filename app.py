@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.9"
+APP_VERSION = "3.7.0"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -8932,6 +8932,106 @@ st.markdown(
     }
 
 </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+st.markdown(
+    """
+    <style>
+    /* v3.7.0 FINAL OVERRIDES — 1, 2, 5 */
+
+    /* 1. 좌측 빠른 이동 버튼: 두 줄 중앙 고정 */
+    [data-testid="stSidebar"] div.stButton > button {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        min-height: 3.45rem !important;
+        font-weight: 900 !important;
+    }
+    [data-testid="stSidebar"] div.stButton > button p {
+        white-space: pre-line !important;
+        text-align: center !important;
+        line-height: 1.12 !important;
+        margin: 0 !important;
+        font-weight: 900 !important;
+        color: #182235 !important;
+    }
+
+    /* 2. 안내·설명·캡션 포함 좌우측 전체 글씨를 더 진하고 선명하게 */
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] small,
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] li,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] small {
+        color: #263244 !important;
+        font-weight: 800 !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stMain"] [data-testid="stCaptionContainer"] p {
+        color: #3F4E63 !important;
+        font-weight: 800 !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stMain"] h1,
+    [data-testid="stMain"] h2,
+    [data-testid="stMain"] h3,
+    [data-testid="stMain"] h4,
+    [data-testid="stMain"] h5 {
+        color: #14213A !important;
+        font-weight: 950 !important;
+    }
+
+    /* 분석값/핵심값: 진한 하늘색 + 조금 크게 */
+    [data-testid="stMetricValue"],
+    .summary-value,
+    .summary-card .summary-value,
+    .pillar-row,
+    .consult-topic-card strong,
+    .hub-accent strong {
+        color: #087CC1 !important;
+        font-weight: 950 !important;
+        font-size: 1.18em !important;
+    }
+
+    [data-testid="stDataFrame"] * {
+        font-weight: 750 !important;
+    }
+
+    .stTextInput input,
+    .stNumberInput input,
+    .stDateInput input,
+    .stSelectbox [data-baseweb="select"] *,
+    .stRadio label,
+    .stCheckbox label {
+        font-weight: 800 !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stAlert"] p {
+        font-weight: 850 !important;
+        opacity: 1 !important;
+    }
+
+    /* 5. 리워드 배지: 두 줄 문구 중앙 정렬 */
+    .status-pill {
+        white-space: normal !important;
+        text-align: center !important;
+        line-height: 1.24 !important;
+        font-weight: 850 !important;
+    }
+    </style>
     """,
     unsafe_allow_html=True,
 )
