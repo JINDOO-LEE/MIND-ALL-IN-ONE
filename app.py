@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.4"
+APP_VERSION = "3.6.5"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -6286,7 +6286,7 @@ def render_admin_dashboard():
 
 
 st.set_page_config(
-    page_title="힘들고 외로운 당신에게 희망을 · MIND ALL IN ONE",
+    page_title="힘들고 외로운 당신에게 희망과 용기를 · MIND ALL IN ONE",
     page_icon="✨",
     layout="wide",
 )
@@ -6873,7 +6873,7 @@ st.markdown(
         margin-bottom: 10px;
         white-space: nowrap;
         letter-spacing: -0.035em;
-        padding-right: 2.4em;
+        padding-right: 0;
     }
     .hope-word {
         color: #8B5CF6;
@@ -8187,7 +8187,10 @@ st.markdown(
 
     .brand-title-lead,
     .brand-title-hope-row {
-        display: inline;
+        display: block;
+    }
+    .brand-title-hope-row {
+        margin-top: 0.12em;
     }
 
     @media (max-width: 560px) {
@@ -8202,14 +8205,15 @@ st.markdown(
 
         .brand-title-lead {
             display: block !important;
-            white-space: nowrap !important;
+            white-space: normal !important;
+            text-align: center !important;
         }
 
         .brand-title-hope-row {
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            margin-top: 2px !important;
+            display: block !important;
+            width: 100% !important;
+            margin-top: 4px !important;
+            text-align: center !important;
         }
 
         .brand-rainbow-inline {
@@ -8245,11 +8249,8 @@ st.markdown(
 
     @media (max-width: 560px) {
         .brand-title-hope-row {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
+            display: block !important;
             width: 100% !important;
-            gap: 8px !important;
             margin-top: 4px !important;
             text-align: center !important;
         }
@@ -8948,11 +8949,8 @@ st.markdown(
                     <span class="brand-kicker-bottom brand-kicker-service">SAJU · TAROT · AI COUNSELING</span>
                 </div>
                 <div class="brand-title">
-                    <span class="brand-title-lead">✨ 힘들고 외로운 당신에게</span>
-                    <span class="brand-title-hope-row">
-                        <span class="hope-word">희망을</span>
-                        <span class="brand-rainbow-inline">🌈</span>
-                    </span>
+                    <span class="brand-title-lead">✨ 힘들고 외로운 당신에게 <span class="hope-word">희망과 용기를~</span></span>
+                    <span class="brand-title-hope-row">다시 일어설 힘을 함께 찾아요!</span>
                 </div>
                 <div class="brand-sub">
                     취업 · 진학 · 결혼 · 이사 · 창업 같은 미래 선택부터,
