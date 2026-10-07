@@ -57,6 +57,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
@@ -80,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.3"
+APP_VERSION = "3.6.4"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -3870,29 +3871,30 @@ def add_theme_score(theme_count, ten_god):
         theme_count["학습"] += 1
 
 
-def make_saju_pdf(report_text, person_name):
-    # Windows 한글 폰트를 순서대로 찾아 사용합니다.
-    font_candidates = [
-        r"C:\Windows\Fonts\malgun.ttf",
-        r"C:\Windows\Fonts\malgunsl.ttf",
-        r"C:\Windows\Fonts\gulim.ttc",
-    ]
-
-    font_path = next(
-        (path for path in font_candidates if os.path.exists(path)),
-        None,
-    )
-
-    if font_path is None:
+def register_pdf_korean_font():
+    """Windows/Linux 모두에서 동작하는 ReportLab 내장 한국어 CID 폰트를 등록합니다."""
+    font_name = "HYSMyeongJo-Medium"
+    try:
+        if font_name not in pdfmetrics.getRegisteredFontNames():
+            pdfmetrics.registerFont(UnicodeCIDFont(font_name))
+        # Paragraph의 <b> 같은 인라인 스타일도 같은 한글 폰트로 안전하게 처리
+        pdfmetrics.registerFontFamily(
+            font_name,
+            normal=font_name,
+            bold=font_name,
+            italic=font_name,
+            boldItalic=font_name,
+        )
+        return font_name
+    except Exception:
         return None
 
-    font_name = "SajuKoreanFont"
 
-    if font_name not in pdfmetrics.getRegisteredFontNames():
-        try:
-            pdfmetrics.registerFont(TTFont(font_name, font_path))
-        except Exception:
-            return None
+def make_saju_pdf(report_text, person_name):
+    # Render(Linux)와 Windows 모두에서 사용 가능한 ReportLab 내장 한국어 폰트
+    font_name = register_pdf_korean_font()
+    if font_name is None:
+        return None
 
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -3962,23 +3964,10 @@ def make_saju_pdf(report_text, person_name):
 
 def make_consulting_pdf(report_text, person_name):
     """상담용 문장을 읽기 좋은 A4 보고서로 만듭니다."""
-    font_candidates = [
-        r"C:\Windows\Fonts\malgun.ttf",
-        r"C:\Windows\Fonts\malgunsl.ttf",
-        r"C:\Windows\Fonts\gulim.ttc",
-        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-        "/usr/share/fonts/truetype/unfonts-core/UnDotum.ttf",
-    ]
-    font_path = next((path for path in font_candidates if os.path.exists(path)), None)
-    if font_path is None:
+    # Render(Linux)와 Windows 모두에서 사용 가능한 ReportLab 내장 한국어 폰트
+    font_name = register_pdf_korean_font()
+    if font_name is None:
         return None
-
-    font_name = "SajuConsultFont"
-    if font_name not in pdfmetrics.getRegisteredFontNames():
-        try:
-            pdfmetrics.registerFont(TTFont(font_name, font_path))
-        except Exception:
-            return None
 
     buffer = io.BytesIO()
     display_name = person_name if person_name else "내담자"
@@ -11975,7 +11964,6 @@ try:
                 "PDF 버튼을 만들지 못했습니다. "
                 "Windows 한글 폰트를 찾지 못했거나 폰트 등록에 실패했습니다."
             )
-            st.code(r"C:\Windows\Fonts\malgun.ttf")
 
     # -----------------------------------------------------
     # TAB 5 : 상담보고서 — 일반인 친화 쉬운말 모드
@@ -12111,7 +12099,7 @@ try:
                         width="stretch",
                     )
                 else:
-                    st.warning("전달용 PDF 한글 폰트를 찾지 못했습니다.")
+                    st.warning("전달용 PDF를 만들지 못했습니다. 한글 PDF 폰트 등록을 확인해 주세요.")
 
         with record_tab:
             st.caption("쉬운 상담 문장과 함께 계산 근거와 상담 메모까지 보관하는 기록입니다.")
