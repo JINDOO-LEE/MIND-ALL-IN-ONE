@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.8"
+APP_VERSION = "3.6.9"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4961,11 +4961,48 @@ def tarot_cards_image_html(cards, positions=None):
 
 
 def render_tarot_card_image_or_fallback(card, label="지금 가장 먼저 볼 메시지", width=300):
-    """오늘의 1장 카드를 실제 78장 이미지 덱으로 보여줍니다."""
-    st.markdown(
-        tarot_cards_image_html([card], [label]),
-        unsafe_allow_html=True,
-    )
+    """오늘의 1장 카드를 Streamlit 이미지로 직접 보여줍니다."""
+    render_tarot_cards_native([card], [label])
+
+
+def render_tarot_cards_native(cards, positions=None):
+    """타로 결과를 HTML 문자열이 아니라 Streamlit 이미지로 직접 표시합니다."""
+    positions = positions or tarot_spread_positions(len(cards))
+    count = max(1, len(cards))
+
+    if count == 1:
+        columns = [st.container()]
+    else:
+        columns = st.columns(min(count, 5))
+
+    for idx, card in enumerate(cards):
+        target = columns[0] if count == 1 else columns[idx]
+        with target:
+            image_path = tarot_card_image_path(card)
+            position = positions[idx] if idx < len(positions) else ""
+            name = str(card.get("name", "") or "타로 카드")
+            english = str(card.get("english", "") or "")
+            orientation = str(card.get("orientation", "정방향") or "정방향")
+            orientation_icon = "↩️" if orientation == "역방향" else "⬆️"
+
+            if position:
+                st.markdown(f"**{position}**")
+
+            if image_path and Path(image_path).exists():
+                st.image(
+                    str(image_path),
+                    caption=f"{name} · {english}",
+                    width=260 if count == 1 else None,
+                )
+            else:
+                # 이미지 파일이 빠진 경우에도 HTML 태그를 노출하지 않고
+                # 기존 카드 시각화를 안전하게 렌더링합니다.
+                st.markdown(
+                    tarot_card_visual_html(card, position),
+                    unsafe_allow_html=True,
+                )
+
+            st.markdown(f"{orientation_icon} **{name}** · {orientation}")
 
 
 def render_today_free_tarot_card(card):
@@ -8817,6 +8854,81 @@ st.markdown(
         div[data-testid="stButton"] > button div {
             font-size: 0.96rem !important;
         }
+    }
+
+
+    /* =====================================================
+       v3.6.9 FULL READABILITY
+       안내/설명 문장까지 좌우측 전체 글씨를 더 진하게
+       ===================================================== */
+
+    [data-testid="stSidebar"],
+    [data-testid="stMain"] {
+        color: #1F2937;
+    }
+
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] small,
+    [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] li,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] small,
+    [data-testid="stMain"] div[data-testid="stMarkdownContainer"] {
+        font-weight: 760 !important;
+        color: #263244 !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stMain"] [data-testid="stCaptionContainer"] p {
+        font-weight: 740 !important;
+        color: #475569 !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stMain"] h1,
+    [data-testid="stMain"] h2,
+    [data-testid="stMain"] h3,
+    [data-testid="stMain"] h4,
+    [data-testid="stMain"] h5 {
+        font-weight: 950 !important;
+        color: #152238 !important;
+    }
+
+    /* 분석값 / 입력값 / 메트릭 값 */
+    [data-testid="stMetricValue"],
+    .summary-value,
+    .summary-card .summary-value,
+    .consult-topic-card strong,
+    .hub-accent strong {
+        color: #087CC1 !important;
+        font-weight: 950 !important;
+        font-size: 1.16em !important;
+    }
+
+    .stTextInput input,
+    .stNumberInput input,
+    .stDateInput input,
+    .stSelectbox [data-baseweb="select"] {
+        color: #087CC1 !important;
+        font-weight: 850 !important;
+    }
+
+    /* 표 안 글씨도 더 또렷하게 */
+    [data-testid="stDataFrame"] {
+        font-weight: 700 !important;
+    }
+
+    /* 안내 박스 */
+    [data-testid="stAlert"] p {
+        font-weight: 820 !important;
+        opacity: 1 !important;
     }
 
 </style>
@@ -12797,10 +12909,7 @@ try:
         if tarot_cards:
             positions = tarot_spread_positions(len(tarot_cards))
             st.markdown("### ✨ 뽑힌 카드")
-            st.markdown(
-                tarot_cards_image_html(tarot_cards, positions),
-                unsafe_allow_html=True,
-            )
+            render_tarot_cards_native(tarot_cards, positions)
             for idx, card in enumerate(tarot_cards):
                 orientation_icon = "↩️" if card.get("orientation") == "역방향" else "⬆️"
                 with st.expander(
