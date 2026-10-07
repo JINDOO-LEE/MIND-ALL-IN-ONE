@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.7.0"
+APP_VERSION = "3.7.1"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4305,9 +4305,9 @@ def ask_ai_counselor(
 
     short_mode = answer_mode.startswith("짧고")
     length_rule = (
-        "전체 답변은 한국어 450~700자 정도, 6~10문장 안팎으로 간결하게 씁니다."
+        "전체 답변은 한국어 650~900자 정도로 쓰고, 추상적인 격려보다 구체적인 실행 방법을 우선합니다."
         if short_mode
-        else "전체 답변은 한국어 800~1100자 정도로 쓰되 반복 설명은 피합니다."
+        else "전체 답변은 한국어 1000~1400자 정도로 쓰되 반복 설명은 피하고 실행 단계와 확인 방법을 충분히 제시합니다."
     )
 
     instructions = f"""
@@ -4336,8 +4336,9 @@ def ask_ai_counselor(
 답변 순서:
 **먼저 답부터** — 예/아니오 판정이 아니라, 질문을 어떻게 검토하면 좋을지 핵심 방향을 1~2문장
 **지금의 흐름** — 사주에서 참고할 점을 단정하지 않는 쉬운 말로 1~2문장
-**현실에서 확인할 점** — 실제 생활에서 점검할 것 2~3가지
-**지금 해볼 한 걸음** — 오늘 또는 이번 달에 할 수 있는 구체적인 행동 1가지
+**현실에서 확인할 점** — 실제 생활에서 점검할 조건을 3가지 정도 구체적으로 제시
+**실행 계획** — 오늘·이번 주·이번 달로 나누어 각각 1개씩, 시간·횟수·확인 방법이 보이도록 행동을 제시
+**막힐 때 대안** — 계획이 어렵거나 실패했을 때 부담 없이 줄여서 다시 시작할 방법 1가지
 **응원 한마디** — 짧고 현실적인 격려
 
 질문이 매우 간단해도 위 제목은 유지하되 각 항목을 짧게 씁니다.
@@ -4373,7 +4374,7 @@ def ask_ai_counselor(
         model=model,
         instructions=instructions,
         input=[{"role": "user", "content": user_input}],
-        max_output_tokens=550 if short_mode else 850,
+        max_output_tokens=750 if short_mode else 1050,
         store=False,
     )
 
@@ -5248,6 +5249,42 @@ def ask_ai_tarot(
 
 
 
+
+def render_readable_dataframe(data, *args, **kwargs):
+    """표 안의 글씨까지 또렷하게 보이도록 공통 스타일을 적용합니다."""
+    try:
+        if isinstance(data, pd.DataFrame):
+            styled = (
+                data.style
+                .set_properties(**{
+                    "font-weight": "800",
+                    "color": "#087CC1",
+                    "font-size": "15px",
+                })
+                .set_table_styles([
+                    {
+                        "selector": "th",
+                        "props": [
+                            ("font-weight", "900"),
+                            ("color", "#172033"),
+                            ("font-size", "15px"),
+                        ],
+                    },
+                    {
+                        "selector": "td",
+                        "props": [
+                            ("font-weight", "800"),
+                            ("color", "#087CC1"),
+                        ],
+                    },
+                ])
+            )
+            return st.dataframe(styled, *args, **kwargs)
+    except Exception:
+        pass
+    return st.dataframe(data, *args, **kwargs)
+
+
 # =========================================================
 # v2.3.0 : 빠른 이동 전용 화면
 # =========================================================
@@ -5789,7 +5826,7 @@ def render_admin_dashboard():
                         "신청": str(_order.get("created_at", ""))[:16],
                         "결제완료": str(_order.get("paid_at", "") or "-")[:16],
                     })
-                st.dataframe(pd.DataFrame(_order_table), hide_index=True, width="stretch")
+                render_readable_dataframe(pd.DataFrame(_order_table), hide_index=True, width="stretch")
             else:
                 st.caption("아직 주문기록이 없습니다.")
 
@@ -5968,7 +6005,7 @@ def render_admin_dashboard():
                     "클릭": int(row.get("click_count", 0) or 0),
                     "최근 클릭": str(row.get("last_clicked_at", "") or "-")[:16],
                 })
-            st.dataframe(pd.DataFrame(table), hide_index=True, width="stretch")
+            render_readable_dataframe(pd.DataFrame(table), hide_index=True, width="stretch")
         else:
             st.caption("아직 추천 링크 클릭 기록이 없습니다.")
 
@@ -6065,7 +6102,7 @@ def render_admin_dashboard():
         st.markdown("### 최근 고객")
         recent = recent_customers_for_admin(30)
         if recent:
-            st.dataframe(pd.DataFrame(recent), hide_index=True, width="stretch")
+            render_readable_dataframe(pd.DataFrame(recent), hide_index=True, width="stretch")
         else:
             st.caption("아직 등록 고객이 없습니다.")
 
@@ -6098,7 +6135,7 @@ def render_admin_dashboard():
                     "종류": row.get("talisman_type", ""),
                     "발급일": str(row.get("created_at", ""))[:16],
                 })
-            st.dataframe(pd.DataFrame(reward_table), hide_index=True, width="stretch")
+            render_readable_dataframe(pd.DataFrame(reward_table), hide_index=True, width="stretch")
         else:
             st.info("아직 발급된 부적이 없습니다.")
 
@@ -6321,7 +6358,7 @@ def render_admin_dashboard():
                         "최근방문": str(_candidate.get("last_visit_at", ""))[:16],
                     })
                 with st.expander("👥 이번 명절 추첨 후보군 보기", expanded=False):
-                    st.dataframe(pd.DataFrame(_candidate_table), hide_index=True, width="stretch")
+                    render_readable_dataframe(pd.DataFrame(_candidate_table), hide_index=True, width="stretch")
 
             _holiday_key = _active_holiday["event_key"]
             _existing_holiday_draw = get_event_draw(_holiday_key)
@@ -6387,7 +6424,7 @@ def render_admin_dashboard():
                                 "고객코드": _masked_customer_code(_winner.get("customer_code", "")),
                                 "누적 방문": int(_winner.get("visit_count", 0) or 0),
                             })
-                        st.dataframe(pd.DataFrame(_winner_rows), hide_index=True, width="stretch")
+                        render_readable_dataframe(pd.DataFrame(_winner_rows), hide_index=True, width="stretch")
 
         st.warning(
             "실물·모바일 상품권 등 금전성 경품을 실제 운영할 때는 행사 기간, 대상, 추첨 방법, "
@@ -9036,6 +9073,55 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+st.markdown(
+    """
+    <style>
+    /* v3.7.1 — 최종 가독성 강화 */
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] small,
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] li,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] small,
+    [data-testid="stMain"] .stMarkdown div {
+        font-weight: 780 !important;
+        color: #202B3C !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stCaptionContainer"] p {
+        font-weight: 760 !important;
+        color: #42526A !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stAlert"] p,
+    .consult-card,
+    .consult-topic-card,
+    .step-strip {
+        font-weight: 780 !important;
+    }
+
+    .summary-label,
+    .consult-topic-title {
+        font-weight: 900 !important;
+        color: #172033 !important;
+    }
+
+    .summary-value,
+    [data-testid="stMetricValue"] {
+        color: #087CC1 !important;
+        font-weight: 950 !important;
+        font-size: 1.18em !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.caption(
     f"✨ MIND ALL IN ONE · v{APP_VERSION} · "
     "사주 · 타로 · AI 상담 · 마음정리 · 고객혜택"
@@ -10575,28 +10661,32 @@ try:
     consult_money = (
         f"장기적으로는 {daeun_plain['money']} "
         f"올해는 {sewoon_plain['money']} "
-        "이 부분은 '돈이 들어온다'거나 '나간다'고 미리 정하는 뜻이 아닙니다. "
-        "지금 내 생활에서 돈을 쓰고 모으고 결정하는 기준을 조금 더 분명하게 만들면 마음의 안정에도 도움이 될 수 있다는 정도로 받아들이면 좋습니다."
+        "이것을 수입·손실의 예언으로 보지 말고, 돈을 다루는 기준을 점검하는 신호로 활용해보세요. "
+        "실행은 ① 최근 30일 지출을 고정비·생활비·선택지출 3가지로 나누고, "
+        "② 줄일 항목은 한 가지만 정하고, ③ 큰 지출은 금액·기간·책임 범위를 적은 뒤 하루 지나 다시 결정하는 방식이 현실적입니다."
     )
 
     consult_job = (
         f"장기적으로는 {daeun_plain['job']} "
         f"올해는 {sewoon_plain['job']} "
-        "지금까지 해온 일을 모두 바꾸라는 뜻은 아닙니다. 먼저 내가 이미 잘하고 있는 일을 확인하고, 그 위에 새 역할이나 기술을 한 가지씩 더해가는 방식이 현실적입니다. "
-        "작은 경험도 쌓이면 다음 선택을 할 때 든든한 근거가 됩니다."
+        "직업 변화는 한 번에 크게 움직이기보다 작은 실험으로 확인하는 편이 좋습니다. "
+        "실행은 ① 지금 잘하는 일 3가지를 적고, ② 앞으로 늘리고 싶은 역할 1가지를 고른 뒤, "
+        "③ 2주 동안 관련 업무·학습·지원 행동을 한 번 실제로 해보고 결과를 기록해보세요. "
+        "그 기록이 다음 선택의 근거가 됩니다."
     )
 
     consult_relation = (
         f"장기적으로는 {daeun_plain['relation']} "
         f"올해는 {sewoon_plain['relation']} "
-        "좋은 관계는 무조건 맞춰주는 관계보다 서로의 생각과 한계를 편안하게 말할 수 있는 관계에 가깝습니다. "
-        "내 마음을 부드럽게 표현하고 필요할 때 거리를 조절하는 것도 관계를 지키는 좋은 방법입니다."
+        "관계에서는 참는 것보다 기준을 부드럽게 말하는 연습이 도움이 됩니다. "
+        "실행은 ① 지금 불편한 상황을 한 문장으로 적고, ② '당신 때문에'보다 '나는 ~해서 어렵다'처럼 내 감정과 필요를 말하고, "
+        "③ 바로 결론을 내기보다 상대 반응을 본 뒤 다음 거리를 정해보세요."
     )
 
     consult_flow = (
         f"지금의 큰 흐름에서는 {daeun_plain['theme']}이 중요해지고, {current_year}년에는 {sewoon_plain['theme']}을 조금 더 의식해볼 수 있습니다. "
-        "두 주제가 비슷하면 한 가지를 깊게 다뤄보는 때로, 서로 다르면 장기 방향과 올해의 과제를 나누어 생각하는 때로 활용해보세요. "
-        "한 번에 전부 바꾸지 않아도 됩니다. 지금 가장 마음에 걸리는 한 가지부터 정리해도 충분합니다."
+        "두 주제가 비슷하면 한 가지를 깊게, 다르면 '장기 방향 1개 + 올해 실행 1개'로 나누어 보세요. "
+        "오늘은 가장 마음에 걸리는 문제를 한 문장으로 적고, 이번 주에 확인할 사실 1개와 실행할 행동 1개를 정하는 정도면 충분합니다."
     )
 
     consult_decade = (
@@ -10643,37 +10733,37 @@ try:
 
     action_map = {
         "재물": [
-            "이번 달 고정비나 반복 지출 한 가지를 점검해보세요.",
-            "큰 결정을 하기 전에는 금액·기간·책임 범위를 한 번 적어보세요.",
-            "돈에 대한 불안보다 내가 통제할 수 있는 습관 하나에 집중해보세요.",
+            "오늘 최근 30일 지출을 고정비·생활비·선택지출 세 칸으로 나눠 적어보세요.",
+            "이번 달에는 줄일 항목을 딱 한 가지 정하고, 절약 목표 금액도 함께 적어보세요.",
+            "10만원 이상 지출은 금액·필요성·대안·결정일을 적고 최소 하루 뒤 다시 판단해보세요.",
         ],
         "직업": [
-            "현재 잘하고 있는 일을 세 가지 적어보세요.",
-            "앞으로 넓히고 싶은 역할은 한 번에 하나만 정해보세요.",
-            "모든 책임을 혼자 안으려 하지 말고 도움을 요청할 사람을 한 명 떠올려보세요.",
+            "오늘 현재 잘하는 일 3가지와 하기 싫은 일 3가지를 종이에 나눠 적어보세요.",
+            "이번 주 안에 늘리고 싶은 역할이나 기술 1가지를 골라 30분짜리 첫 행동을 해보세요.",
+            "2주 뒤 결과를 보고 계속할지·수정할지·그만둘지 결정하도록 기록을 남겨보세요.",
         ],
         "활동": [
-            "완벽하게 준비되기 전에 작은 결과물 하나를 먼저 만들어보세요.",
-            "일주일에 한 번이라도 꾸준히 이어갈 시간을 정해보세요.",
-            "비교보다 어제의 나와 조금 달라진 점을 기록해보세요.",
+            "오늘 20분 안에 끝낼 수 있는 가장 작은 결과물 하나를 먼저 만들어보세요.",
+            "이번 주 달력에 20~30분짜리 실행 시간을 3번 미리 적어두세요.",
+            "주말에 '한 일·막힌 점·다음 한 걸음'을 각각 한 줄씩 기록해보세요.",
         ],
         "관계": [
-            "내가 편안하게 지키고 싶은 관계의 기준을 한 문장으로 적어보세요.",
-            "고마운 마음이나 필요한 부탁을 너무 늦기 전에 말해보세요.",
-            "맞춰주기만 하는 관계에서는 내 한계도 부드럽게 표현해보세요.",
+            "불편한 관계 하나를 골라 '사실-내 감정-내가 원하는 것'을 각각 한 문장으로 적어보세요.",
+            "이번 주 한 번은 비난 대신 '나는 ~해서 어렵고, ~해주면 좋겠다'는 방식으로 말해보세요.",
+            "대화 뒤에는 관계를 더 가까이할지, 같은 거리를 둘지, 잠시 거리를 둘지 스스로 정해보세요.",
         ],
         "학습": [
-            "지금 필요한 공부 한 가지를 정하고 30분만 시작해보세요.",
-            "배운 내용을 실제 생활이나 일에 한 번 적용해보세요.",
-            "혼자 막힐 때 도움을 받을 사람이나 자료를 미리 정해두세요.",
+            "배울 주제는 한 가지로 줄이고 오늘 30분만 시작해보세요.",
+            "이번 주 안에 배운 내용을 실제 생활이나 일에 한 번 써보고 결과를 적어보세요.",
+            "막혔을 때 물어볼 사람·강의·자료 중 하나를 미리 정해두고 20분 이상 막히면 바로 도움을 받아보세요.",
         ],
     }
     consult_actions = action_map.get(
         strongest_theme,
         [
-            "지금 가장 중요한 한 가지를 정해 작은 행동으로 옮겨보세요.",
-            "한 번에 많은 것을 바꾸기보다 꾸준히 이어갈 수 있는 속도를 선택해보세요.",
-            "잘한 일을 스스로 인정하는 시간을 꼭 가져보세요.",
+            "오늘 가장 마음에 걸리는 문제를 한 문장으로 적고, 내가 바꿀 수 있는 부분에 밑줄을 그어보세요.",
+            "이번 주에 할 행동을 20~30분짜리 한 단계로 줄여 달력에 날짜와 시간을 적어두세요.",
+            "일주일 뒤 '해본 것·달라진 점·다음 행동'을 한 줄씩 적어 다음 결정을 만들어보세요.",
         ],
     )
 
@@ -11221,7 +11311,7 @@ try:
                 "시진", "대략 KST 구간", "대표 KST", "후보 시주", "한글",
                 "시주 천간 십신", "시지 지장간(십신)", "시주 오행", "일주 변화"
             ]
-            st.dataframe(
+            render_readable_dataframe(
                 filtered_candidate_df[candidate_display_columns],
                 hide_index=True,
                 width="stretch",
@@ -11400,7 +11490,7 @@ try:
                         c_ten, c_rel = st.columns(2)
                         with c_ten:
                             st.markdown("##### 🔟 가상 천간 십신")
-                            st.dataframe(
+                            render_readable_dataframe(
                                 virtual_result["ten_god_df"],
                                 hide_index=True,
                                 width="stretch",
@@ -11411,14 +11501,14 @@ try:
                             if virtual_result["relation_df"].empty:
                                 st.info("대표적인 합·충·형·파·해 관계가 발견되지 않았습니다.")
                             else:
-                                st.dataframe(
+                                render_readable_dataframe(
                                     virtual_result["relation_df"],
                                     hide_index=True,
                                     width="stretch",
                                 )
 
                         with st.expander("🌱 가상 지장간·지지 십신", expanded=False):
-                            st.dataframe(
+                            render_readable_dataframe(
                                 virtual_result["hidden_df"],
                                 hide_index=True,
                                 width="stretch",
@@ -11457,7 +11547,7 @@ try:
                             )
 
                         with st.expander("📆 가상 대운 전체표 보기", expanded=False):
-                            st.dataframe(
+                            render_readable_dataframe(
                                 virtual_result["daewoon_df"],
                                 hide_index=True,
                                 width="stretch",
@@ -11623,7 +11713,7 @@ try:
                                 },
                             ]
                             st.markdown("##### 📌 핵심 비교")
-                            st.dataframe(
+                            render_readable_dataframe(
                                 pd.DataFrame(summary_rows),
                                 hide_index=True,
                                 width="stretch",
@@ -11642,7 +11732,7 @@ try:
                                     "차이(B-A)": b_count - a_count,
                                 })
                             element_compare_df = pd.DataFrame(element_compare_rows)
-                            st.dataframe(
+                            render_readable_dataframe(
                                 element_compare_df,
                                 hide_index=True,
                                 width="stretch",
@@ -11670,7 +11760,7 @@ try:
                                     pair_b_label: b_value,
                                     "변화": "달라짐" if a_value != b_value else "같음",
                                 })
-                            st.dataframe(
+                            render_readable_dataframe(
                                 pd.DataFrame(ten_compare_rows),
                                 hide_index=True,
                                 width="stretch",
@@ -11742,7 +11832,7 @@ try:
                                     pair_b_label: b_text,
                                     "변화": "달라짐" if a_text != b_text else "같음",
                                 })
-                            st.dataframe(
+                            render_readable_dataframe(
                                 pd.DataFrame(dae_compare_rows),
                                 hide_index=True,
                                 width="stretch",
@@ -11831,7 +11921,7 @@ try:
                     "야자시 분리법 선택에 따라 일주·시주 적용이 달라질 수 있습니다."
                 )
                 if not late_zashi_df.empty:
-                    st.dataframe(late_zashi_df, hide_index=True, width="stretch")
+                    render_readable_dataframe(late_zashi_df, hide_index=True, width="stretch")
                 st.caption(
                     "정확한 출생이 밤 11시 전후였다는 기억이 있다면 이 부분을 특히 확인하세요. "
                     "출생기록을 찾게 되면 실제 시각으로 다시 계산하는 것이 가장 정확합니다."
@@ -11906,7 +11996,7 @@ try:
                 hanja_to_korean(hour_pillar) if time_known else "-",
             ],
         })
-        st.dataframe(original_df, hide_index=True, width="stretch")
+        render_readable_dataframe(original_df, hide_index=True, width="stretch")
 
         with st.expander("🧭 연주·월주 절기 기준", expanded=True):
             st.write(f"**입춘 판정:** {ipchun_status}")
@@ -11942,14 +12032,14 @@ try:
                 )
 
         with st.expander("🔟 천간 십신", expanded=True):
-            st.dataframe(ten_god_df, hide_index=True, width="stretch")
+            render_readable_dataframe(ten_god_df, hide_index=True, width="stretch")
             st.caption(
                 "십신은 일간을 기준으로 다른 천간과의 오행 및 음양 관계를 "
                 "비견·겁재·식신·상관·편재·정재·편관·정관·편인·정인으로 구분합니다."
             )
 
         with st.expander("🌱 지장간과 지지 십신"):
-            st.dataframe(hidden_df, hide_index=True, width="stretch")
+            render_readable_dataframe(hidden_df, hide_index=True, width="stretch")
             st.caption(
                 "지장간의 배열과 해석 방식은 명리 학파에 따라 세부적인 차이가 있을 수 있습니다."
             )
@@ -11964,15 +12054,15 @@ try:
                 st.metric("도움 비율", f"{support_ratio:.1f}%")
 
             st.markdown(f"### {basic_strength}")
-            st.dataframe(relation_df, hide_index=True, width="stretch")
+            render_readable_dataframe(relation_df, hide_index=True, width="stretch")
             st.info(month_message)
 
             st.markdown("#### 🌳 통근")
-            st.dataframe(root_df, hide_index=True, width="stretch")
+            render_readable_dataframe(root_df, hide_index=True, width="stretch")
             st.write(f"통근한 지지 수: **{root_count}개**")
 
             st.markdown("#### ☀️ 천간 지원")
-            st.dataframe(support_df, hide_index=True, width="stretch")
+            render_readable_dataframe(support_df, hide_index=True, width="stretch")
             st.write(f"비겁·인성으로 돕는 천간 수: **{visible_support_count}개**")
 
             st.warning(
@@ -11993,25 +12083,25 @@ try:
 
             st.markdown("#### 🔗 천간 오합")
             if stem_result_rows:
-                st.dataframe(stem_combination_df, hide_index=True, width="stretch")
+                render_readable_dataframe(stem_combination_df, hide_index=True, width="stretch")
             else:
                 st.info("확인 가능한 천간 사이에서 천간 오합이 발견되지 않았습니다.")
 
             st.markdown("#### ⚡ 지지 육충")
             if branch_result_rows:
-                st.dataframe(branch_clash_df, hide_index=True, width="stretch")
+                render_readable_dataframe(branch_clash_df, hide_index=True, width="stretch")
             else:
                 st.info("확인 가능한 지지 사이에서 육충이 발견되지 않았습니다.")
 
             st.markdown("#### 🤝 지지 육합")
             if six_combination_rows:
-                st.dataframe(six_df, hide_index=True, width="stretch")
+                render_readable_dataframe(six_df, hide_index=True, width="stretch")
             else:
                 st.info("확인 가능한 지지 사이에서 육합이 발견되지 않았습니다.")
 
             st.markdown("#### 🔺 완성 삼합")
             if three_combination_rows:
-                st.dataframe(three_df, hide_index=True, width="stretch")
+                render_readable_dataframe(three_df, hide_index=True, width="stretch")
             else:
                 st.info("완성된 지지 삼합은 발견되지 않았습니다.")
 
@@ -12019,19 +12109,19 @@ try:
             with f1:
                 st.markdown("#### ⛓️ 형")
                 if punishment_rows:
-                    st.dataframe(punishment_df, hide_index=True, width="stretch")
+                    render_readable_dataframe(punishment_df, hide_index=True, width="stretch")
                 else:
                     st.info("형 없음")
             with f2:
                 st.markdown("#### 💥 파")
                 if break_rows:
-                    st.dataframe(break_df, hide_index=True, width="stretch")
+                    render_readable_dataframe(break_df, hide_index=True, width="stretch")
                 else:
                     st.info("파 없음")
             with f3:
                 st.markdown("#### 🌫️ 해")
                 if harm_rows:
-                    st.dataframe(harm_df, hide_index=True, width="stretch")
+                    render_readable_dataframe(harm_df, hide_index=True, width="stretch")
                 else:
                     st.info("해 없음")
 
@@ -12083,7 +12173,7 @@ try:
                 weakest_element,
             ],
         })
-        st.dataframe(summary_basic, hide_index=True, width="stretch")
+        render_readable_dataframe(summary_basic, hide_index=True, width="stretch")
 
     # -----------------------------------------------------
     # TAB 3 : 대운·세운
@@ -12106,7 +12196,7 @@ try:
             st.warning(daewoon_time_note)
 
         st.markdown("### 🛤️ 대운표")
-        st.dataframe(daewoon_df, hide_index=True, width="stretch")
+        render_readable_dataframe(daewoon_df, hide_index=True, width="stretch")
 
         st.markdown("### 🎯 현재 대운 · 올해 세운")
         c1, c2, c3 = st.columns(3)
@@ -12126,16 +12216,16 @@ try:
             "한글": [STEM_INFO[day_stem][2], current_daewoon_korean, current_sewoon_korean],
             "일간 기준 십신": ["나 자신", current_daewoon_ten_god, current_sewoon_ten_god],
         })
-        st.dataframe(comparison_df, hide_index=True, width="stretch")
+        render_readable_dataframe(comparison_df, hide_index=True, width="stretch")
 
         st.markdown("### ⚡ 현재 운과 원국의 지지 충")
         if current_relation_rows:
-            st.dataframe(current_relation_df, hide_index=True, width="stretch")
+            render_readable_dataframe(current_relation_df, hide_index=True, width="stretch")
         else:
             st.info("현재 대운·세운과 원국 사이에서 지지 육충은 발견되지 않았습니다.")
 
         with st.expander("📅 전체 세운표"):
-            st.dataframe(sewoon_df, hide_index=True, width="stretch")
+            render_readable_dataframe(sewoon_df, hide_index=True, width="stretch")
 
         st.markdown("### 🔎 원하는 연도 세운 보기")
         available_years = [row["연도"] for row in sewoon_rows if isinstance(row["연도"], int)]
@@ -12201,12 +12291,12 @@ try:
 
             st.markdown("#### 선택 연도와 원국의 지지 충")
             if selected_clash_rows:
-                st.dataframe(pd.DataFrame(selected_clash_rows), hide_index=True, width="stretch")
+                render_readable_dataframe(pd.DataFrame(selected_clash_rows), hide_index=True, width="stretch")
             else:
                 st.info(f"{selected_year}년 세운과 원국 사이에서 지지 육충은 발견되지 않았습니다.")
 
         st.markdown("### 📆 앞으로 10년 비교")
-        st.dataframe(ten_year_df, hide_index=True, width="stretch")
+        render_readable_dataframe(ten_year_df, hide_index=True, width="stretch")
         st.bar_chart(decade_df.set_index("분야"))
         st.write(
             f"{start_year}년부터 {end_year}년까지 세운의 천간 십신 기준으로 "
