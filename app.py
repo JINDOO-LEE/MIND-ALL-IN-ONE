@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.7"
+APP_VERSION = "3.6.8"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4852,6 +4852,102 @@ def tarot_cards_image_html(cards, positions=None):
         text-align: center !important;
         font-weight: 800 !important;
         line-height: 1.28 !important;
+    }
+
+
+    /* =====================================================
+       v3.6.8 STRONGER READABILITY
+       ===================================================== */
+
+    /* 좌측/우측 모든 일반 텍스트를 더 진하게 */
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] li,
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] span,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] li {
+        font-weight: 720 !important;
+        color: #1F2937 !important;
+    }
+
+    /* 제목류 */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stMain"] h1,
+    [data-testid="stMain"] h2,
+    [data-testid="stMain"] h3,
+    [data-testid="stMain"] h4 {
+        font-weight: 900 !important;
+        color: #172033 !important;
+    }
+
+    /* 입력값/선택값/메트릭/요약값은 진한 하늘색 */
+    [data-testid="stMetricValue"],
+    .summary-value,
+    .summary-card .summary-value,
+    .stSelectbox [data-baseweb="select"] div,
+    .stTextInput input,
+    .stNumberInput input,
+    .stDateInput input {
+        color: #0B78C4 !important;
+        font-weight: 900 !important;
+    }
+
+    .summary-value,
+    [data-testid="stMetricValue"] {
+        font-size: 1.16em !important;
+    }
+
+    /* 캡션도 너무 흐리지 않게 */
+    [data-testid="stCaptionContainer"] p,
+    .stCaptionContainer p {
+        opacity: 1 !important;
+        color: #4B5563 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 좌측 빠른 이동 버튼 두 줄 중앙 정렬 강화 */
+    [data-testid="stSidebar"] div.stButton > button {
+        text-align: center !important;
+        font-weight: 900 !important;
+    }
+    [data-testid="stSidebar"] div.stButton > button p {
+        white-space: pre-line !important;
+        text-align: center !important;
+        line-height: 1.18 !important;
+        margin: 0 !important;
+        font-weight: 900 !important;
+    }
+
+    /* 강조용 경고/성공/정보 박스 */
+    [data-testid="stAlert"] p {
+        font-weight: 800 !important;
+    }
+
+
+    /* 타로 카드 이미지 표시 안정화 */
+    .tarot-real-grid {
+        display: grid;
+        gap: 18px;
+        justify-content: center;
+        align-items: start;
+        width: 100%;
+    }
+    .tarot-real-grid.tarot-count-1 {
+        grid-template-columns: minmax(180px, 260px);
+    }
+    .tarot-real-grid img,
+    .tarot-card-image,
+    .tarot-card-face img {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 
 </style>
