@@ -1,3 +1,4 @@
+# v3.6.0 - expand solar birth-date range to 1900-present
 # v3.5.9 - enlarge admin two-row menu text
 # v3.5.8 - replace admin tabs with two-row button navigation
 # v3.5.7 - robust admin navigation sizing fix
@@ -79,7 +80,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.5.9"
+APP_VERSION = "3.6.0"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -9317,6 +9318,8 @@ with st.form("saju_input_form"):
             birth_input_date = st.date_input(
                 "양력 생년월일",
                 value=datetime(1970, 1, 1),
+                min_value=datetime(1900, 1, 1),
+                max_value=_customer_now().date(),
             )
             lunar_year = lunar_month = lunar_day = None
             lunar_is_leap = False
