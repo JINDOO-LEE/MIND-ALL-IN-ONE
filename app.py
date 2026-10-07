@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.6.6"
+APP_VERSION = "3.6.7"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4792,7 +4792,69 @@ def tarot_cards_image_html(cards, positions=None):
           gap: 16px;
         }
       }
-    </style>
+    
+    /* =====================================================
+       v3.6.7 READABILITY & ANALYSIS EMPHASIS
+       ===================================================== */
+
+    /* 좌측 빠른 이동 버튼: 두 줄 중앙 정렬 */
+    [data-testid="stSidebar"] div.stButton > button p {
+        white-space: pre-line !important;
+        text-align: center !important;
+        line-height: 1.22 !important;
+        font-weight: 850 !important;
+    }
+
+    /* 오른쪽 메인 영역의 일반 글씨를 더 선명하게 */
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] li,
+    [data-testid="stMain"] .stMarkdown {
+        font-weight: 620;
+    }
+
+    [data-testid="stMain"] [data-testid="stCaptionContainer"] p {
+        font-weight: 680 !important;
+        opacity: 0.88 !important;
+    }
+
+    /* 주요 분석값: 진한 하늘색 + 조금 크게 */
+    .summary-value,
+    [data-testid="stMetricValue"] {
+        color: #0B78C4 !important;
+        font-size: 1.12em;
+        font-weight: 900 !important;
+    }
+
+    .summary-sub {
+        opacity: 0.88 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 중요한 안내는 눈에 잘 띄도록 */
+    .step-strip b,
+    .section-intro b {
+        color: #B42318;
+        font-weight: 900;
+    }
+
+    .step-strip .term-help {
+        display: inline-block;
+        margin-top: 5px;
+        color: #8A4B08;
+        background: #FFF3B0;
+        border-radius: 8px;
+        padding: 2px 7px;
+    }
+
+    /* 리워드/상태 배지 가운데 정렬 */
+    .status-pill {
+        text-align: center !important;
+        font-weight: 800 !important;
+        line-height: 1.28 !important;
+    }
+
+</style>
     """
     return (
         style
@@ -6892,11 +6954,21 @@ st.markdown(
         transform: none;
         z-index: 2;
     }
+    .brand-kicker {
+        width: 100%;
+        text-align: center;
+    }
+    .brand-kicker-service {
+        display: inline-block;
+        text-align: center;
+    }
+
     .brand-sub {
         font-size: 1.02rem;
         line-height: 1.72;
-        opacity: 0.78;
+        opacity: 0.92;
         max-width: 760px;
+        font-weight: 700;
     }
     .brand-scene {
         border-radius: 22px;
@@ -8672,11 +8744,11 @@ with st.sidebar:
     st.markdown("### 🚀 빠른 이동")
     q1, q2 = st.columns(2)
     with q1:
-        if st.button("🔮 상담/메인", width="stretch", key="quick_nav_home"):
+        if st.button("🔮 상담\n• 메인", width="stretch", key="quick_nav_home"):
             st.session_state["quick_view"] = "home"
             st.rerun()
     with q2:
-        if st.button("🎫 이용권/결제", width="stretch", key="quick_nav_pass"):
+        if st.button("🎫 이용권\n• 결제", width="stretch", key="quick_nav_pass"):
             st.session_state["quick_view"] = "pass"
             st.rerun()
 
@@ -8955,8 +9027,7 @@ st.markdown(
                     <span class="brand-title-hope-row">다시 일어설 힘을 함께 찾아요!</span>
                 </div>
                 <div class="brand-sub">
-                    취업 · 진학 · 결혼 · 이사 · 창업 같은 미래 선택부터,
-                    다시 시작이 필요한 순간까지 —
+                    취업 · 진학 · 결혼 · 이사 · 창업 같은 미래 선택부터, 다시 시작이 필요한 순간까지 —<br>
                     사주 · 타로 · AI 상담으로 마음을 정리하고 지금 내가 할 수 있는 다음 한 걸음을 함께 찾아보세요.
                 </div>
                 <div class="status-row">
@@ -10623,7 +10694,8 @@ try:
         <div class="step-strip">
             <b>처음이라면 이렇게 보면 편해요.</b><br>
             <b>기본정보 → 종합풀이</b>로 전체 흐름을 보고,
-            구체적인 고민은 <b>AI 상담실</b>, 지금 마음의 힌트는 <b>타로 상담</b>에서 이어가세요.
+            구체적인 고민은 <b>AI 상담실</b>, 지금 마음의 힌트는 <b>타로 상담</b>에서 이어가세요.<br>
+            <b class="term-help">잘 모르는 용어는 좌측 아래의 명리 용어 찾기를 보세요!</b>
         </div>
         """,
         unsafe_allow_html=True,
