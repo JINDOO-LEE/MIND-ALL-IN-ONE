@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.9.0"
+APP_VERSION = "3.9.1"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4338,6 +4338,7 @@ def build_ai_saju_context(
 - 올해 흐름의 관계 유형: {current_sewoon_ten_god} — {ten_god_trait_text(current_sewoon_ten_god)}
 - 현재 눈에 띄는 생활 주제: {strongest_theme}
 - 앞으로 10년에서 자주 나타나는 주제: {decade_main_theme}
+- 이번 상담 우선 질문: {focus_question_display if 'focus_question_display' in globals() else ''}
 - 기존 상담 핵심: {points_text}
 """.strip()
 
@@ -9976,19 +9977,31 @@ with st.form("saju_input_form"):
         placeholder="예: 유튜브를 꾸준히 운영해 작은 수입을 만들고, 사람들과 교류하는 활동도 시작하고 싶습니다.",
     )
 
+    focus_question_labels = {
+        "자동 추천": "자동 추천 · 내 상황에서 가장 먼저 볼 주제를 골라주세요",
+        "돈·재정": "돈·재정 · 지금 재정적으로 힘든데 앞으로 나아질 가능성이 있을까요?",
+        "일·직업": "일·직업 · 직업을 바꾸려는데 지금 움직여도 괜찮을까요?",
+        "사업·새로운 활동": "사업·새로운 활동 · 새 일이나 사업을 시작하려는데 전망과 주의점은 무엇일까요?",
+        "관계·가족": "관계·가족 · 동료·친구·가족과의 불화가 풀릴 가능성과 방법은 무엇일까요?",
+        "배움·자격": "배움·자격 · 새 공부나 자격 준비를 시작해도 괜찮을까요?",
+        "이사·생활환경": "이사·생활환경 · 언제 이사하고 어느 방향을 우선 검토하면 좋을까요?",
+    }
     focus_choice = st.selectbox(
-        "4. 이번 상담에서 가장 먼저 보고 싶은 분야",
-        [
-            "자동 추천",
-            "돈·재정",
-            "일·직업",
-            "사업·새로운 활동",
-            "관계·가족",
-            "배움·자격",
-            "이사·생활환경",
-        ],
+        "4. 이번 상담에서 가장 먼저 답을 받고 싶은 질문",
+        list(focus_question_labels.keys()),
+        format_func=lambda value: focus_question_labels.get(value, value),
         key="focus_choice",
-        help="여러 분야를 한꺼번에 반복 설명하지 않고, 선택한 한 분야를 중심으로 구체적인 행동 방향을 보여줍니다.",
+        help="여러 분야를 반복하지 않고, 선택한 질문 하나를 중심으로 답변과 행동 방향을 정리합니다.",
+    )
+
+    focus_question = st.text_area(
+        "5. 내 상황에 맞게 질문을 한 문장으로 적어주세요 (선택)",
+        key="focus_question",
+        height=85,
+        placeholder=(
+            "예: 최근 수입이 줄고 대출 상환이 부담됩니다. 6개월 안에 재정이 나아질 가능성과 "
+            "제가 먼저 해야 할 일을 알고 싶습니다. / 이사라면 현재 지역→희망 지역, 예상 기간도 함께 적어주세요."
+        ),
     )
 
     submitted = st.form_submit_button("🔮 사주 분석하기", width="stretch")
@@ -10738,6 +10751,7 @@ try:
     past_story_clean = str(past_story or "").strip()
     present_story_clean = str(present_story or "").strip()
     future_story_clean = str(future_story or "").strip()
+    focus_question_clean = str(focus_question or "").strip()
 
     past_story_display = past_story_clean or "과거 경험은 별도로 입력하지 않았습니다."
     present_story_display = present_story_clean or "현재 상황은 별도로 입력하지 않았습니다."
@@ -11128,6 +11142,51 @@ try:
         },
     )
 
+    focus_outlook_map = {
+        "재물": (
+            f"재정이 저절로 풀린다고 단정할 수는 없지만, 현재 큰 흐름의 '{daeun_plain['theme']}'과 "
+            f"올해의 '{sewoon_plain['theme']}'을 참고하면 지금은 수입 확대만 기다리기보다 현금흐름을 먼저 정리하고 "
+            "작은 추가 수입원을 시험해볼 가치가 있습니다. 3개월 동안 실제 숫자가 개선되는지 확인한 뒤 다음 결정을 하세요."
+        ),
+        "직업": (
+            f"직업 변화는 검토해볼 수 있습니다. 다만 '{daeun_plain['theme']}'과 '{sewoon_plain['theme']}'을 이유로 "
+            "바로 퇴사하기보다, 바꾸려는 직무를 1~3개월 먼저 시험하고 급여·시간·체력·적합성을 비교하는 방식이 안전합니다."
+        ),
+        "활동": (
+            f"새 사업이나 활동은 가능성을 시험해볼 만합니다. 현재 흐름의 '{daeun_plain['theme']}'과 "
+            f"올해의 '{sewoon_plain['theme']}'은 참고하되, 전망은 실제 고객 반응과 반복 실행 결과로 확인해야 합니다. "
+            "30일 안에 최소 결과물을 만들고, 3개월 반응을 본 뒤 확대 여부를 결정하세요."
+        ),
+        "관계": (
+            "관계가 반드시 회복된다고 예언할 수는 없지만, 갈등의 원인과 경계를 정리하고 대화 방식을 바꾸면 "
+            "관계가 나아질 여지는 확인할 수 있습니다. 상대방의 마음을 추측하기보다 1~3개월 동안 대화 빈도, 약속 이행, "
+            "갈등 반복 여부를 보면서 가까이할지 거리를 둘지 판단하세요."
+        ),
+        "학습": (
+            "새 공부나 자격 준비는 시작해볼 수 있습니다. 중요한 것은 운보다 실제 활용 목적입니다. "
+            "3개월 안에 결과물·시험·과제 중 하나를 만들어보고, 생활이나 일에 도움이 되는지 확인한 뒤 계속할지 정하세요."
+        ),
+    }
+
+    if focus_choice == "이사·생활환경":
+        focus_outlook = (
+            "이사 자체는 현재 생활을 바꾸는 선택으로 검토할 수 있습니다. 다만 현재 버전은 특정 날짜와 방위를 "
+            "'길일·길방'으로 확정 계산하는 전용 택일 엔진은 아직 없습니다. "
+            "현재 지역→희망 지역, 이사 가능 기간, 가족 일정, 계약·잔금 조건을 함께 적으면 "
+            "사주 흐름과 현실 조건을 묶어 후보 시기와 점검 항목을 조언할 수 있습니다. "
+            "정확한 날짜·방향 순위는 전용 계산 기능을 추가한 뒤 제공하는 것이 맞습니다."
+        )
+    else:
+        focus_outlook = focus_outlook_map.get(
+            selected_focus_theme,
+            "지금 상황을 한 번에 단정하기보다 실제 조건을 확인하면서 작은 행동으로 전망을 검증하는 것이 좋습니다.",
+        )
+
+    focus_question_display = focus_question_clean or focus_question_labels.get(
+        focus_choice,
+        selected_focus_label,
+    )
+
     # -----------------------------------------------------
     # v3.8.5 : 실제 입력내용 + 구체적 행동을 반영한 종합 총평
     # -----------------------------------------------------
@@ -11181,12 +11240,12 @@ try:
     )
 
     report_total_summary = (
-        f"**상담보고서 결론:** {client_name}님이 직접 알려준 삶의 흐름은 과거 '{past_short}', 현재 '{present_short}', 앞으로 '{future_short}'입니다. "
-        f"이번 상담에서는 **{selected_focus_label}**을 우선해서 보는 것이 좋습니다. "
-        f"{focus_roadmap['summary']} "
+        f"**상담보고서 결론:** {client_name}님의 질문은 '{focus_question_display}'입니다. "
+        f"현재 답의 핵심은 이렇습니다. {focus_outlook} "
         f"생활방식은 {consult_lifestyle} "
         f"사고방식은 {consult_mindset} "
-        f"그리고 30일 동안은 '{focus_roadmap['30d']}'부터 실행하고, 3개월 뒤에는 '{focus_roadmap['metric']}'을 기준으로 계속할지 수정할지 판단해보세요."
+        f"30일 동안은 '{focus_roadmap['30d']}'부터 실행하고, 3개월 뒤에는 '{focus_roadmap['metric']}'을 기준으로 "
+        "실제로 나아지고 있는지 확인한 뒤 다음 결정을 하세요."
     )
 
     consult_encouragement = ENCOURAGEMENT_MAP.get(
@@ -11360,7 +11419,13 @@ try:
 [앞으로의 방향]
 {consult_future}
 
-[이번 상담 우선 관심사]
+[이번 상담 질문]
+{focus_question_display}
+
+[먼저 보는 답변]
+{focus_outlook}
+
+[현실 점검 방향]
 {selected_focus_label}
 {focus_roadmap["summary"]}
 
@@ -11422,7 +11487,13 @@ try:
 [앞으로의 방향]
 {consult_future}
 
-[이번 상담 우선 관심사]
+[이번 상담 질문]
+{focus_question_display}
+
+[먼저 보는 답변]
+{focus_outlook}
+
+[현실 점검 방향]
 {selected_focus_label}
 {focus_roadmap["summary"]}
 
@@ -12940,7 +13011,13 @@ try:
         st.markdown("#### ⏩ 앞으로의 방향")
         st.info(consult_future)
 
-        st.markdown(f"### 🎯 {client_name}님의 이번 상담 우선 관심사 · {selected_focus_label}")
+        st.markdown(f"### 🎯 {client_name}님의 이번 상담 질문")
+        st.info(f"**질문** — {focus_question_display}")
+
+        st.markdown("#### 🔎 먼저 답부터 보면")
+        st.success(focus_outlook)
+
+        st.markdown(f"#### 🧭 {selected_focus_label} 현실 점검 방향")
         st.info(focus_roadmap["summary"])
 
         st.markdown("#### 🗺️ 30일 · 3개월 · 6개월 로드맵")
