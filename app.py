@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.7.2"
+APP_VERSION = "3.8.0"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -3064,6 +3064,50 @@ PLAIN_MONTH_RELATION = {
     "기타": "여러 성향이 함께 섞여 나타나는 흐름",
 }
 
+ELEMENT_EXAMPLES = {
+    "목": {
+        "zodiac": "호랑이띠·토끼띠",
+        "months": "대략 2월 초~4월 초(입춘~청명 무렵)",
+        "traits": "성장·시작·확장·배움처럼 앞으로 뻗어나가려는 성향",
+        "life": "새로운 일을 시작하거나 계획을 키울 때 힘이 살아나는 편으로 볼 수 있습니다.",
+    },
+    "화": {
+        "zodiac": "뱀띠·말띠",
+        "months": "대략 5월 초~7월 초(입하~소서 무렵)",
+        "traits": "표현·열정·활동·관계처럼 바깥으로 드러내고 움직이려는 성향",
+        "life": "사람 앞에서 표현하거나 활동량을 늘릴 때 힘이 살아나는 편으로 볼 수 있습니다.",
+    },
+    "토": {
+        "zodiac": "소띠·용띠·양띠·개띠",
+        "months": "계절 사이의 전환 구간에 주로 배치되는 기운",
+        "traits": "안정·정리·책임·조율처럼 중심을 잡고 현실을 관리하려는 성향",
+        "life": "생활 기반을 정리하고 책임 범위를 분명히 할 때 안정감을 얻기 쉬운 편입니다.",
+    },
+    "금": {
+        "zodiac": "원숭이띠·닭띠",
+        "months": "대략 8월 초~10월 초(입추~한로 무렵)",
+        "traits": "판단·정리·규칙·결단처럼 기준을 세우고 불필요한 것을 덜어내려는 성향",
+        "life": "기준을 세우고 선택을 정리하거나 책임을 명확히 할 때 힘이 살아나는 편입니다.",
+    },
+    "수": {
+        "zodiac": "돼지띠·쥐띠",
+        "months": "대략 11월 초~1월 초(입동~소한 무렵)",
+        "traits": "정보·관찰·휴식·연결처럼 충분히 살피고 흐름을 읽으려는 성향",
+        "life": "배우고 생각을 정리하거나 도움과 정보를 연결할 때 힘을 보충하기 쉬운 편입니다.",
+    },
+}
+
+def element_example_text(element_name):
+    info = ELEMENT_EXAMPLES.get(str(element_name or "").strip())
+    if not info:
+        return "대표 띠·계절 예시는 참고용이며, 실제 사주는 연·월·일·시 전체를 함께 봐야 합니다."
+    return (
+        f"대표 띠 예시는 {info['zodiac']}, 계절·월 기운은 {info['months']}에 가깝습니다. "
+        f"성향으로 풀면 {info['traits']}입니다. {info['life']} "
+        "단, 띠만 보고 사람 궁합을 판단하는 뜻은 아닙니다."
+    )
+
+
 PLAIN_LIFE_THEME = {
     "재물": "돈과 생활 기반",
     "직업": "일과 역할",
@@ -4259,6 +4303,7 @@ def get_openai_model():
 
 def build_ai_saju_context(
     *,
+    client_name,
     age,
     gender,
     time_known,
@@ -4281,6 +4326,7 @@ def build_ai_saju_context(
     points_text = " / ".join(str(p)[:180] for p in consult_key_points[:3])
     return f"""
 [상담 대상의 기본 정보]
+- 이름: {client_name}
 - 현재 나이: {age}세
 - 성별: {gender}
 - 출생시간: {'확인됨' if time_known else '미상'}
@@ -4347,6 +4393,8 @@ def ask_ai_counselor(
 반드시 지킬 원칙:
 1. 먼저 사용자의 질문에 쉬운 말로 직접 답합니다. 어려운 명리 전문용어와 한자 간지는 기본 답변에서 쓰지 않습니다. 꼭 필요하면 쉬운 뜻을 먼저 설명하고 전문용어는 괄호 안에 한 번만 적습니다.
 1-1. 명리 용어를 꼭 써야 한다면 용어만 적지 말고, 바로 이어서 "어떤 성향인지"를 생활 언어로 한 문장 설명합니다. 예: "정관은 규칙과 책임을 중요하게 여기고 신뢰를 쌓으려는 성향입니다."
+1-2. 상담 대상의 이름이 제공되면 "상담 받는 분", "사용자" 같은 표현 대신 이름+님을 자연스럽게 사용합니다. 한 답변에서 2~4회 정도 호명하되 매 문장마다 반복하지 않습니다.
+1-3. 답변의 중심은 전문용어 설명이 아니라 과거에 반복되기 쉬운 방식, 현재 상황, 앞으로의 선택 방향, 생활방식, 사고방식, 구체적인 실행입니다.
 2. 나이·성별만으로 성격, 역할, 가족관계, 경제상황을 추측하거나 고정관념을 적용하지 않습니다.
 3. 사용자가 직접 알려준 생활환경과 고민을 가장 중요한 현실 정보로 봅니다. 사주 해석과 실제 상황이 다르면 실제 상황을 우선합니다.
 4. '반드시 된다', '큰돈을 번다', '이혼한다', '병이 생긴다'처럼 미래를 단정하지 않습니다.
@@ -4365,12 +4413,15 @@ def ask_ai_counselor(
 15. {length_rule}
 
 답변 순서:
-**먼저 답부터** — 예/아니오 판정이 아니라, 질문을 어떻게 검토하면 좋을지 핵심 방향을 1~2문장
-**지금의 흐름** — 사주에서 참고할 점을 단정하지 않는 쉬운 말로 1~2문장
-**현실에서 확인할 점** — 실제 생활에서 점검할 조건을 3가지 정도 구체적으로 제시
-**실행 계획** — 오늘·이번 주·이번 달로 나누어 각각 1개씩, 시간·횟수·확인 방법이 보이도록 행동을 제시
-**막힐 때 대안** — 계획이 어렵거나 실패했을 때 부담 없이 줄여서 다시 시작할 방법 1가지
-**응원 한마디** — 짧고 현실적인 격려
+**{client_name}님의 핵심 상황** — 질문에 대한 핵심을 쉬운 말로 1~2문장
+**과거에 반복되기 쉬운 방식** — 실제 과거 사건을 단정하지 말고, 반복됐을 수 있는 행동·생각 패턴을 설명
+**현재** — 지금 가장 중요하게 점검할 현실 조건과 선택 기준
+**앞으로** — 미래를 확정하지 말고 준비하면 좋은 방향과 주의할 점
+**생활방식** — 수면·시간·돈·관계·일의 리듬 등 실제 생활에서 바꿔볼 방법
+**사고방식** — 도움이 되는 생각의 기준과 피하면 좋은 사고 습관
+**실행 계획** — 오늘·이번 주·이번 달로 나누어 각각 1개씩 구체적인 행동 제시
+**막힐 때 대안** — 계획이 어렵거나 실패했을 때 더 작은 단계로 다시 시작하는 방법
+**응원 한마디** — 이름을 자연스럽게 넣은 짧고 현실적인 격려
 
 질문이 매우 간단해도 위 제목은 유지하되 각 항목을 짧게 씁니다.
 """.strip()
@@ -10630,7 +10681,7 @@ try:
     # v1.5 일반인 친화 상담 문장
     # 전문가용 계산은 그대로 두고, 화면/PDF의 상담 문장만 쉽게 풉니다.
     # -----------------------------------------------------
-    client_name = name if name else "상담 받는 분"
+    client_name = str(name).strip() if str(name or "").strip() else "고객"
 
     default_plain = {
         "theme": "지금 상황을 차분히 살피고 내 기준을 세우는 과정",
@@ -10658,20 +10709,37 @@ try:
         "이 설명은 사람을 한 가지 성격으로 정해놓기 위한 것이 아니라, 이미 잘하고 있는 부분을 발견하고 앞으로의 선택에 활용하기 위한 참고입니다."
     )
 
+    same_element = day_element
+    generating_element = resource_element
+    controlling_element = officer_element
+
+    same_element_explain = element_example_text(same_element)
+    generating_element_explain = element_example_text(generating_element)
+    controlling_element_explain = element_example_text(controlling_element)
+
     if "신강" in basic_strength:
         consult_strength = (
             "스스로 방향을 정하고 움직일 때 힘이 잘 나는 편입니다. 결단력과 추진력은 분명한 자산이 될 수 있습니다. "
-            "다만 책임을 모두 혼자 안으려 하면 쉽게 지칠 수 있으니, 중요한 일일수록 믿을 만한 사람과 생각을 나누면 힘을 더 오래 안정적으로 쓸 수 있습니다."
+            "다만 책임을 모두 혼자 안으려 하면 쉽게 지칠 수 있으니, 중요한 일일수록 믿을 만한 사람과 생각을 나누면 힘을 더 오래 안정적으로 쓸 수 있습니다. "
+            f"\n\n나와 같은 오행은 {same_element}입니다. {same_element_explain}"
+            f"\n\n나를 생하는 오행은 {generating_element}입니다. {generating_element_explain}"
+            f"\n\n나를 극하는 오행은 {controlling_element}입니다. {controlling_element_explain}"
         )
     elif "신약" in basic_strength:
         consult_strength = (
             "혼자 모든 것을 해결하려 하기보다 좋은 환경과 믿을 만한 사람의 도움을 연결할 때 힘이 더 잘 살아나는 편입니다. "
-            "도움을 받는 것은 부족함이 아니라 자원을 잘 활용하는 능력입니다. 안정된 기반을 하나씩 만들수록 자신감도 자연스럽게 따라올 수 있습니다."
+            "도움을 받는 것은 부족함이 아니라 자원을 잘 활용하는 능력입니다. 안정된 기반을 하나씩 만들수록 자신감도 자연스럽게 따라올 수 있습니다. "
+            f"\n\n나와 같은 오행은 {same_element}입니다. {same_element_explain}"
+            f"\n\n나를 생하는 오행은 {generating_element}입니다. {generating_element_explain}"
+            f"\n\n나를 극하는 오행은 {controlling_element}입니다. {controlling_element_explain}"
         )
     else:
         consult_strength = (
             "혼자 해낼 때와 도움을 받을 때를 비교적 균형 있게 활용할 수 있는 편입니다. "
-            "앞장서야 할 때와 힘을 나눠야 할 때를 구분하면 부담은 줄이고 장점은 더 편안하게 살릴 수 있습니다."
+            "앞장서야 할 때와 힘을 나눠야 할 때를 구분하면 부담은 줄이고 장점은 더 편안하게 살릴 수 있습니다. "
+            f"\n\n나와 같은 오행은 {same_element}입니다. {same_element_explain}"
+            f"\n\n나를 생하는 오행은 {generating_element}입니다. {generating_element_explain}"
+            f"\n\n나를 극하는 오행은 {controlling_element}입니다. {controlling_element_explain}"
         )
 
     month_trait = MONTH_RELATION_TRAIT_EXPLANATION.get(
@@ -10679,10 +10747,9 @@ try:
         "여러 행동 방식이 상황에 따라 섞여 나타나는 편",
     )
     consult_structure = (
-        f"생활 방식에서는 {month_plain}이 비교적 눈에 띄는 편입니다. "
-        f"쉽게 말하면 **{month_relation}은 {month_trait}**이라고 볼 수 있습니다. "
-        "이 성향은 장점으로 쓰일 때도 있고, 상황에 따라 과해지거나 부족하게 느껴질 때도 있습니다. "
-        "그래서 '나는 원래 이런 사람'으로 단정하기보다 어떤 상황에서 이 특징이 강하게 나오는지 살펴보는 것이 좋습니다."
+        f"{client_name}님의 생활 방식에서는 {month_trait}이 비교적 눈에 띄는 편입니다. "
+        "쉽게 말해, 익숙한 방식과 내 기준을 중요하게 여기거나 반대로 주변의 도움·정보·규칙을 활용하면서 안정감을 찾는 모습이 상황에 따라 나타날 수 있습니다. "
+        "이것을 고정된 성격으로 보기보다, 어떤 상황에서 내가 편안하고 어떤 상황에서 지치는지를 알아차리는 참고점으로 활용하는 편이 좋습니다."
     )
 
     if not time_known:
@@ -10723,18 +10790,85 @@ try:
     daeun_trait = ten_god_trait_text(current_daewoon_ten_god)
     sewoon_trait = ten_god_trait_text(current_sewoon_ten_god)
     consult_flow = (
-        f"지금의 큰 흐름은 **{current_daewoon_ten_god}**으로 보는데, 용어만 보면 막연할 수 있습니다. "
-        f"쉽게 말하면 {daeun_trait} "
-        f"{current_year}년의 **{current_sewoon_ten_god}**은 {sewoon_trait} "
-        f"따라서 장기적으로는 {daeun_plain['theme']}을, 올해는 {sewoon_plain['theme']}을 생활 속에서 점검해보는 식으로 활용하면 됩니다. "
-        "두 주제가 비슷하면 한 가지를 깊게, 다르면 '장기 방향 1개 + 올해 실행 1개'로 나누어 보세요. "
-        "오늘은 가장 마음에 걸리는 문제를 한 문장으로 적고, 이번 주에 확인할 사실 1개와 실행할 행동 1개를 정하는 정도면 충분합니다."
+        f"{client_name}님의 현재 흐름에서는 {daeun_plain['theme']}이 장기 주제로 보이고, "
+        f"{current_year}년에는 {sewoon_plain['theme']}을 조금 더 의식해볼 수 있습니다. "
+        f"생활 성향으로 풀면 지금은 {daeun_trait} 올해는 {sewoon_trait} "
+        "따라서 무엇이 좋다·나쁘다로 결론내리기보다, 현재 하고 있는 일과 관계를 유지할 부분과 새로 시험해볼 부분을 나누어 보는 것이 좋습니다. "
+        "가장 마음에 걸리는 문제 하나를 정하고, 이번 주에 확인할 사실 1개와 실제 행동 1개를 정해보세요."
     )
 
     consult_decade = (
-        f"앞으로 10년을 넓게 보면 {decade_plain}과 관련된 경험이 여러 번 반복해서 눈에 들어올 수 있습니다. "
-        "이것을 좋고 나쁜 운으로 보기보다, 시간이 지나며 나만의 방법을 만들어갈 가능성이 큰 영역으로 생각해보면 좋습니다. "
-        "반복해서 마주치는 주제는 결국 경험과 노하우가 쌓이는 분야가 될 수 있습니다."
+        f"{client_name}님의 앞으로 긴 흐름에서는 {decade_plain}과 관련된 주제가 반복해서 눈에 들어올 수 있습니다. "
+        "이것은 미래 사건을 확정한다는 뜻이 아니라, 앞으로 선택을 할 때 자주 고민하게 될 관심 영역으로 보는 편이 맞습니다. "
+        "새로운 기회가 보이면 바로 크게 결정하기보다 작은 시험 → 결과 확인 → 확대 여부 결정의 순서로 움직이면 경험을 안전하게 쌓는 데 도움이 됩니다."
+    )
+
+    # -----------------------------------------------------
+    # v3.8.0 : 고객이 바로 이해하는 과거-현재-미래 상담 구조
+    # -----------------------------------------------------
+    if "신강" in basic_strength:
+        strength_lifestyle = (
+            "혼자 판단하고 밀고 가는 힘이 비교적 잘 살아나는 편입니다. "
+            "다만 오래 버티려면 모든 책임을 혼자 안기보다 중간 점검과 역할 분담을 넣는 것이 중요합니다."
+        )
+    elif "신약" in basic_strength:
+        strength_lifestyle = (
+            "환경과 사람의 영향을 비교적 세심하게 받는 편이라, 좋은 정보·도움·휴식·안정된 생활 리듬이 힘을 회복하는 데 중요합니다. "
+            "혼자 버티는 것보다 도움을 잘 연결하는 것이 실제 강점이 될 수 있습니다."
+        )
+    else:
+        strength_lifestyle = (
+            "혼자 결정할 때와 도움을 받을 때를 상황에 맞게 조절하는 편이 좋습니다. "
+            "무조건 앞장서거나 무조건 기대기보다, 일의 크기와 내 체력에 따라 역할을 나누는 방식이 잘 맞습니다."
+        )
+
+    consult_past = (
+        f"**{client_name}님의 과거에 반복되기 쉬운 방식**을 보면, {day_plain['description']} "
+        f"또한 {month_trait}이 생활 속에서 반복됐을 가능성을 참고해볼 수 있습니다. "
+        "실제 과거 사건을 사주만으로 단정할 수는 없지만, 힘든 일이 생겼을 때 내가 혼자 해결하려 했는지, "
+        "주변 도움을 잘 활용했는지, 결정을 오래 미뤘는지를 돌아보면 앞으로의 선택 기준을 찾는 데 도움이 됩니다."
+    )
+
+    consult_present = (
+        f"**지금의 {client_name}님**에게 가장 중요한 것은 '{daeun_plain['theme']}'과 "
+        f"'{sewoon_plain['theme']}'을 현실 생활에서 어떻게 조절하느냐입니다. "
+        f"{consult_flow}"
+    )
+
+    consult_future = (
+        f"**앞으로의 {client_name}님**은 {decade_plain}을 중심으로 경험을 쌓아갈 가능성을 참고해볼 수 있습니다. "
+        f"{consult_decade} "
+        "큰 결정을 한 번에 내리기보다 1개월 시험, 3개월 점검처럼 기간을 정해 확인하면서 움직이는 방식이 안전합니다."
+    )
+
+    lifestyle_map = {
+        "재물": "생활비·고정비·선택지출을 분리해 관리하고, 큰 지출은 바로 결정하지 않는 습관을 만들어보세요.",
+        "직업": "일을 한꺼번에 늘리기보다 핵심 역할 하나를 정하고, 주 2~3회 일정한 시간에 집중하는 생활 리듬을 만들어보세요.",
+        "활동": "완벽한 준비보다 짧게라도 자주 실행하는 생활 리듬이 중요합니다. 결과물을 작게 자주 만드는 편이 좋습니다.",
+        "관계": "사람을 많이 만나는 것보다 편안하게 말할 수 있는 관계를 유지하고, 지칠 때는 일정한 혼자만의 시간을 확보해보세요.",
+        "학습": "하루 20~30분처럼 작은 학습 시간을 정해 반복하고, 배운 내용을 바로 한 번 써보는 생활 방식을 권합니다.",
+    }
+    mindset_map = {
+        "재물": "돈의 크기보다 내가 통제할 수 있는 기준과 습관에 초점을 두세요. 불안할수록 숫자를 확인하고 결정 시간을 늦추는 것이 좋습니다.",
+        "직업": "한 번의 선택으로 인생을 결정하려 하기보다 '작게 해보고 맞으면 늘린다'는 실험적 사고가 도움이 됩니다.",
+        "활동": "완벽해야 시작할 수 있다는 생각보다, 시작한 뒤 고쳐간다는 태도가 더 잘 맞습니다.",
+        "관계": "상대의 마음을 미리 단정하기보다 내가 느낀 사실·감정·원하는 것을 구분해서 생각해보세요.",
+        "학습": "모든 것을 알아야 움직일 수 있다는 생각보다, 필요한 만큼 배우고 바로 적용하면서 보완하는 방식이 좋습니다.",
+    }
+    consult_lifestyle = lifestyle_map.get(
+        strongest_theme,
+        "수면·식사·일정 같은 기본 생활 리듬을 일정하게 유지하고, 중요한 일은 한 번에 하나씩 처리하는 방식을 권합니다.",
+    )
+    consult_mindset = mindset_map.get(
+        strongest_theme,
+        "결과를 미리 확정하려 하기보다 지금 확인할 수 있는 사실과 내가 바꿀 수 있는 행동을 나누어 생각해보세요.",
+    )
+
+    technical_brief = (
+        f"전문용어는 참고로만 보면 됩니다. "
+        f"일간은 {day_master}({info['name']})이고, 기초 균형은 {basic_strength}, "
+        f"현재 큰 흐름은 {current_daewoon_ten_god}, {current_year}년 흐름은 {current_sewoon_ten_god}으로 계산되었습니다. "
+        "이 용어 자체보다 위에서 설명한 성향·생활방식·실행 방향을 먼저 보는 것을 권합니다."
     )
 
     question_map = {
@@ -10821,22 +10955,22 @@ try:
     ]
 
     consult_key_points = [
-        f"내가 가진 힘 | {day_plain['strength']}",
-        f"지금의 방향 | {daeun_plain['theme']}",
-        f"올해의 작은 초점 | {sewoon_plain['theme']}",
+        f"{client_name}님의 강점 | {day_plain['strength']}",
+        f"{client_name}님의 현재 방향 | {daeun_plain['theme']}",
+        f"{client_name}님의 올해 초점 | {sewoon_plain['theme']}",
     ]
 
     consult_script = (
-        f"먼저 {client_name}님이 이미 가지고 있는 힘부터 보겠습니다. {day_plain['strength']}이 장점으로 보입니다. "
-        f"현재 대운의 {current_daewoon_ten_god}은 쉽게 말해 {ten_god_trait_text(current_daewoon_ten_god)} "
-        f"올해 세운의 {current_sewoon_ten_god}은 {ten_god_trait_text(current_sewoon_ten_god)} "
-        "이 용어 자체보다 실제 생활에서 이런 성향이 어떻게 나타나는지를 중심으로 보고, 이미 잘하고 있는 부분을 살리면서 필요한 한 가지를 찾아보겠습니다."
+        f"{client_name}님, 먼저 어려운 명리 용어보다 실제 생활에서 반복되는 성향부터 보겠습니다. "
+        f"{client_name}님에게는 {day_plain['strength']}이 장점으로 보이고, {day_plain['description']} "
+        f"지금은 {daeun_plain['theme']}을, 올해는 {sewoon_plain['theme']}을 어떻게 현실적으로 활용할지가 핵심입니다. "
+        "그래서 과거의 반복 패턴, 현재 상황, 앞으로의 관심 방향을 나누어 보고 마지막에는 구체적인 행동 계획으로 정리하겠습니다."
     )
 
     consult_closing = (
-        "이 보고서는 미래를 정해주는 답안지가 아니라, 지금의 나를 조금 더 이해하고 다음 선택을 생각해보기 위한 참고 지도입니다. "
-        "잘하고 있는 부분은 스스로 인정해 주세요. 부담되는 부분은 한꺼번에 해결하려 하지 말고 작게 나누면 됩니다. "
-        "속도가 느려도 괜찮습니다. 내 상황에 맞는 한 걸음을 꾸준히 이어가는 것이 가장 현실적인 변화의 시작입니다."
+        f"{client_name}님에게 이 보고서는 미래를 정해주는 답안지가 아니라, 지금 상황을 정리하고 다음 행동을 고르는 참고 지도입니다. "
+        f"{client_name}님이 이미 잘하고 있는 부분은 유지하고, 부담되는 부분은 작게 나누어 시험해보세요. "
+        "한 번에 인생을 바꾸는 결정보다 확인하고 수정하면서 이어가는 선택이 더 현실적인 변화가 될 수 있습니다."
     )
 
     # 상담자 기록용 전문가 참고 문장 — 내담자 전달용에는 노출하지 않습니다.
@@ -10957,28 +11091,23 @@ try:
 """
 
     client_report_text = f"""
-나를 이해하는 사주 상담 안내서
+{client_name}님의 생활 중심 사주 상담 안내서
 
 이름: {client_name}
 입력 생년월일: {input_birth_text}
-계산 기준일: {calculation_birth_text}
 출생시간: {report_birth_time_text}
-성별: {gender}
-출생지역: {city}
 
-[지금 기억하면 좋은 3가지]
-• {consult_key_points[0]}
-• {consult_key_points[1]}
-• {consult_key_points[2]}
-
-[내가 가진 힘과 생활 방식]
+[한 문장으로 보는 {client_name}님]
 {consult_opening}
-{consult_strength}
-{consult_structure}
-{consult_pattern}
 
-[지금의 방향과 올해의 초점]
-{consult_flow}
+[과거에 반복되기 쉬운 모습]
+{consult_past}
+
+[현재 상황과 지금의 초점]
+{consult_present}
+
+[앞으로의 방향]
+{consult_future}
 
 [돈과 생활 기반]
 {consult_money}
@@ -10989,28 +11118,29 @@ try:
 [사람 관계]
 {consult_relation}
 
-[앞으로 긴 흐름에서 자주 돌아볼 주제]
-{consult_decade}
+[{client_name}님에게 맞는 생활방식]
+{consult_lifestyle}
 
-[지금 해볼 한 걸음]
-• {consult_actions[0]}
-• {consult_actions[1]}
-• {consult_actions[2]}
+[{client_name}님에게 도움이 되는 사고방식]
+{consult_mindset}
 
-[나에게 한번 물어볼 질문]
-• {consult_questions[0]}
-• {consult_questions[1]}
-• {consult_questions[2]}
+[오늘 · 이번 주 · 이번 달 행동]
+오늘: {consult_actions[0]}
+이번 주: {consult_actions[1]}
+이번 달: {consult_actions[2]}
+
+[전문용어는 이것만 간단히]
+{technical_brief}
 
 [마음에 남겨둘 한마디]
 {consult_encouragement}
 {consult_closing}
 
-※ 이 안내서는 전통 명리학의 내용을 일상적인 말로 풀어쓴 참고자료입니다. 건강·투자·재정·법률·직업처럼 중요한 결정은 실제 정보와 전문가의 조언을 함께 확인해 주세요.
+※ 전통 명리학을 일상적인 말로 풀어쓴 참고자료입니다. 미래 사건을 확정하지 않으며, 건강·투자·재정·법률·직업 등 중요한 결정은 실제 정보와 전문가 조언을 함께 확인해 주세요.
 """
 
     consult_report_text = f"""
-사주 상담 기록 보고서
+{client_name}님의 사주 상담 기록 보고서
 
 이름: {client_name}
 입력 생년월일: {input_birth_text}
@@ -11019,17 +11149,17 @@ try:
 성별: {gender}
 출생지역: {city}
 
-[상담 시작 문장]
+[상담 시작]
 {consult_script}
 
-[쉬운 말로 정리한 기본 흐름]
-{consult_opening}
-{consult_strength}
-{consult_structure}
-{consult_pattern}
+[과거에 반복되기 쉬운 모습]
+{consult_past}
 
-[지금의 방향]
-{consult_flow}
+[현재 상황]
+{consult_present}
+
+[앞으로의 방향]
+{consult_future}
 
 [돈과 생활 기반]
 {consult_money}
@@ -11040,29 +11170,28 @@ try:
 [사람 관계]
 {consult_relation}
 
-[앞으로 10년]
-{consult_decade}
+[생활방식]
+{consult_lifestyle}
 
-[지금 해볼 한 걸음]
-• {consult_actions[0]}
-• {consult_actions[1]}
-• {consult_actions[2]}
+[사고방식]
+{consult_mindset}
 
-[함께 확인해볼 질문]
-• {consult_questions[0]}
-• {consult_questions[1]}
-• {consult_questions[2]}
+[구체적인 실행]
+오늘: {consult_actions[0]}
+이번 주: {consult_actions[1]}
+이번 달: {consult_actions[2]}
 
-[마음에 남겨둘 한마디]
-{consult_encouragement}
+[전문용어 간단 요약]
+{technical_brief}
 
-[전문가 참고]
+[상담자 계산 참고]
 {technical_summary}
 
 [마무리]
+{consult_encouragement}
 {consult_closing}
 
-※ 전통 명리학에 따른 상담 참고자료이며, 건강·투자·재정·법률·직업 등 중요한 실제 결정의 단독 근거로 사용하지 않습니다.
+※ 전통 명리학에 따른 상담 참고자료이며, 중요한 실제 결정의 단독 근거로 사용하지 않습니다.
 """
 
     pdf_data = make_saju_pdf(report_text, name)
@@ -11096,7 +11225,7 @@ try:
     # -----------------------------------------------------
     # v1.5.2 : 모든 탭보다 위에서 바로 보이는 상담 핵심
     # -----------------------------------------------------
-    st.markdown("## 🌟 상담 핵심 바로보기")
+    st.markdown(f"## 🌟 {client_name}님의 상담 핵심 바로보기")
     st.caption("이 영역은 어떤 탭을 열어도 결과 화면 상단에서 바로 확인할 수 있습니다.")
 
     quick_points = []
@@ -11108,13 +11237,13 @@ try:
 
     q1, q2, q3 = st.columns(3)
     with q1:
-        st.markdown("**① 나의 강점**")
+        st.markdown(f"**① {client_name}님의 강점**")
         st.info(quick_points[0] if len(quick_points) > 0 else "나의 강점을 차분히 확인해 보세요.")
     with q2:
-        st.markdown("**② 지금의 큰 흐름**")
+        st.markdown(f"**② {client_name}님의 현재 흐름**")
         st.info(quick_points[1] if len(quick_points) > 1 else "지금의 큰 흐름을 살펴보세요.")
     with q3:
-        st.markdown("**③ 올해의 초점**")
+        st.markdown(f"**③ {client_name}님의 올해 초점**")
         st.info(quick_points[2] if len(quick_points) > 2 else "올해 집중할 주제를 살펴보세요.")
 
     st.markdown("### 🪴 지금 해볼 한 걸음")
@@ -12498,7 +12627,7 @@ try:
                 <div class="consult-kicker">쉽게 읽는 상담 안내서 · v{APP_VERSION}</div>
                 <div class="consult-title">{safe_client_name}님의 쉽게 읽는 사주 상담</div>
                 <div class="consult-sub">
-                    어려운 용어는 줄이고, 내가 가진 힘·지금의 방향·생활에서 해볼 수 있는 작은 한 걸음을 중심으로 풀었습니다.
+                    전문용어는 짧게 줄이고, 과거·현재·앞으로의 흐름과 생활방식·사고방식·실행 방향을 중심으로 풀었습니다.
                     미래를 단정하기보다 스스로 선택할 힘을 키우는 참고자료로 활용해 주세요.
                 </div>
             </div>
@@ -12506,38 +12635,20 @@ try:
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 🌟 지금 기억하면 좋은 3가지")
-        st.info(f"① **나의 강점** — {safe_points[0].split('|', 1)[-1].strip()}")
-        st.info(f"② **큰 흐름** — {safe_points[1].split('|', 1)[-1].strip()}")
-        st.info(f"③ **올해의 초점** — {safe_points[2].split('|', 1)[-1].strip()}")
+        st.markdown(f"### 🌟 {client_name}님, 먼저 이것만 보세요")
+        st.info(f"**강점** — {safe_points[0].split('|', 1)[-1].strip()}")
+        st.info(f"**현재 큰 방향** — {safe_points[1].split('|', 1)[-1].strip()}")
+        st.info(f"**올해 먼저 챙길 것** — {safe_points[2].split('|', 1)[-1].strip()}")
 
-        st.markdown("### 🪴 지금 해볼 한 걸음")
-        for idx, action in enumerate(consult_actions, start=1):
-            st.success(f"{idx}. {action}")
+        st.markdown(f"### 🧭 {client_name}님의 과거 · 현재 · 앞으로")
+        st.markdown(f"#### ⏪ 과거에 반복되기 쉬운 모습")
+        st.info(consult_past)
+        st.markdown("#### 📍 지금의 상황")
+        st.info(consult_present)
+        st.markdown("#### ⏩ 앞으로의 방향")
+        st.info(consult_future)
 
-        st.markdown("### 💛 응원 한마디")
-        st.success(consult_encouragement)
-        st.caption(consult_closing)
-
-        st.divider()
-        st.caption("아래에는 상담 내용을 조금 더 자세히 풀어쓴 설명이 이어집니다.")
-
-        st.markdown("### 💬 상담을 시작할 때 이렇게 이야기해보세요")
-        st.markdown(
-            f'<div class="consult-card">{escape(consult_script)}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown("### 🌱 타고난 기본 흐름")
-        st.markdown(
-            f'<div class="consult-card">{escape(consult_opening)}<br><br>{escape(consult_strength)}<br><br>{escape(consult_structure)}<br><br>{escape(consult_pattern)}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown("### 🧭 지금의 큰 흐름")
-        st.info(consult_flow)
-
-        st.markdown("### 💬 생활에서 살펴볼 부분")
+        st.markdown(f"### 💬 {client_name}님의 관심사를 생활로 풀어보면")
         t1, t2 = st.columns(2)
         with t1:
             st.markdown(
@@ -12554,26 +12665,45 @@ try:
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 📆 앞으로 10년을 바라보는 관점")
-        st.write(consult_decade)
+        st.markdown(f"### 🏡 {client_name}님에게 맞는 생활방식")
+        st.success(consult_lifestyle)
 
-        st.markdown("### 💭 나에게 한번 물어볼 질문")
-        for question in consult_questions:
-            st.markdown(
-                f'<div class="consult-card">{escape(question)}</div>',
-                unsafe_allow_html=True,
-            )
+        st.markdown(f"### 🧠 {client_name}님에게 도움이 되는 사고방식")
+        st.success(consult_mindset)
 
-        with st.expander("🔎 상담자용 계산 근거 — 필요할 때만 열어보세요"):
+        st.markdown("### 🪴 그래서 지금 무엇을 하면 좋을까요?")
+        st.success(f"**오늘** — {consult_actions[0]}")
+        st.success(f"**이번 주** — {consult_actions[1]}")
+        st.success(f"**이번 달** — {consult_actions[2]}")
+
+        st.markdown("### 🌿 오행은 생활 언어로만 간단히")
+        st.info(
+            f"**나와 같은 오행 · {same_element}** — {same_element_explain}\n\n"
+            f"**나를 생하는 오행 · {generating_element}** — {generating_element_explain}\n\n"
+            f"**나를 극하는 오행 · {controlling_element}** — {controlling_element_explain}"
+        )
+        st.caption(
+            "띠와 월 표시는 이해를 돕는 대표 예시입니다. 특정 띠 사람과의 궁합을 뜻하지 않습니다."
+        )
+
+        st.markdown("### 💛 마무리")
+        st.success(f"{client_name}님, {consult_encouragement}")
+        st.caption(consult_closing)
+
+        with st.expander("🔎 전문용어는 여기서만 간단히 보기"):
+            st.write(technical_brief)
+            st.caption("본문은 생활 언어를 우선하고, 전문용어는 계산 근거 확인용으로만 간단히 표시합니다.")
+
+        with st.expander("🧾 상담자용 상세 계산 근거"):
             st.write(technical_summary)
             st.caption(
-                "아래 내용은 상담자가 계산 근거를 확인하기 위한 참고입니다. "
-                "내담자에게는 위의 쉬운 설명을 먼저 사용하는 것을 권장합니다."
+                "이 부분은 상담자가 계산 근거를 확인하기 위한 참고입니다. "
+                f"{client_name}님에게는 위의 쉬운 설명을 먼저 보여주는 것을 권장합니다."
             )
 
         st.markdown("### 📝 상담 메모")
         consult_note = st.text_area(
-            "상담 중 확인한 사실이나 상담 받는 분의 질문을 적어두세요.",
+            f"상담 중 확인한 사실이나 {client_name}님의 질문을 적어두세요.",
             value="",
             height=140,
             key="consult_note",
@@ -12590,7 +12720,7 @@ try:
         counselor_pdf = make_consulting_pdf(counselor_pdf_text, name)
 
         st.markdown("### 💾 상담보고서 저장")
-        deliver_tab, record_tab = st.tabs(["👤 상담 받는 분 전달용", "🗂️ 상담자 기록용"])
+        deliver_tab, record_tab = st.tabs([f"👤 {client_name}님 전달용", "🗂️ 상담자 기록용"])
 
         with deliver_tab:
             st.caption("어려운 용어를 줄이고 내가 가진 힘·지금의 방향·실천 아이디어·응원 문장을 담은 전달용 보고서입니다.")
@@ -12928,6 +13058,7 @@ try:
             else:
                 day_plain = PLAIN_DAY_MASTER_GUIDE.get(day_master, {})
                 saju_context = build_ai_saju_context(
+                    client_name=client_name,
                     age=current_age,
                     gender=gender,
                     time_known=time_known,
@@ -13231,6 +13362,7 @@ try:
                     if tarot_combine_saju:
                         day_plain = PLAIN_DAY_MASTER_GUIDE.get(day_master, {})
                         tarot_saju_context = build_ai_saju_context(
+                            client_name=client_name,
                             age=current_age,
                             gender=gender,
                             time_known=time_known,
