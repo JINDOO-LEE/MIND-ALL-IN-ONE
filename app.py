@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.9.2"
+APP_VERSION = "3.9.3"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -11561,67 +11561,39 @@ try:
         "건강·재정·법률·직업 등 중요한 실제 결정은 이 결과만으로 판단하지 마세요."
     )
 
-    # -----------------------------------------------------
-    # v1.5.2 : 모든 탭보다 위에서 바로 보이는 상담 핵심
-    # -----------------------------------------------------
-    st.markdown(f"## 🌟 {client_name}님의 상담 핵심 바로보기")
-    st.caption("이 영역은 어떤 탭을 열어도 결과 화면 상단에서 바로 확인할 수 있습니다.")
-
-    quick_points = []
-    for point in consult_key_points[:3]:
-        point_text = str(point)
-        if "|" in point_text:
-            point_text = point_text.split("|", 1)[1].strip()
-        quick_points.append(point_text)
-
-    q1, q2, q3 = st.columns(3)
-    with q1:
-        st.markdown(f"**① {client_name}님의 강점**")
-        st.info(quick_points[0] if len(quick_points) > 0 else "나의 강점을 차분히 확인해 보세요.")
-    with q2:
-        st.markdown(f"**② {client_name}님의 현재 흐름**")
-        st.info(quick_points[1] if len(quick_points) > 1 else "지금의 큰 흐름을 살펴보세요.")
-    with q3:
-        st.markdown(f"**③ {client_name}님의 올해 초점**")
-        st.info(quick_points[2] if len(quick_points) > 2 else "올해 집중할 주제를 살펴보세요.")
-
-    st.markdown("### 🪴 지금 해볼 한 걸음")
-    if consult_actions:
-        for idx, action in enumerate(consult_actions[:3], start=1):
-            st.write(f"**{idx}.** {action}")
-    else:
-        st.write("지금 할 수 있는 작은 행동 하나부터 정해보세요.")
-
-    st.markdown("### 💛 응원 한마디")
-    st.success(consult_encouragement)
-    st.caption(consult_closing)
-
     st.divider()
 
     st.markdown(
         """
         <div class="step-strip">
             <b>처음이라면 이렇게 보면 편해요.</b><br>
-            <b>기본정보 → 종합풀이</b>로 전체 흐름을 보고,
-            구체적인 고민은 <b>AI 상담실</b>, 지금 마음의 힌트는 <b>타로 상담</b>에서 이어가세요.<br>
+            <b>기본정보·사주원국 → 대운·세운 → 종합 상담/결론</b> 순서로 보면 전체 흐름을 이해하기 쉽습니다.<br>
+            구체적인 질문은 <b>AI 상담실</b>, 지금 마음의 힌트는 <b>타로 상담</b>에서 이어가세요.<br>
             <b class="term-help">잘 모르는 용어는 좌측 아래의 명리 용어 찾기를 보세요!</b>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    tab1, tab7, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "👤 기본정보",
-        "🃏 타로 상담",
-        "☯ 사주원국",
+    basic_origin_tab, fortune_tab, tarot_tab, ai_tab, final_tab = st.tabs([
+        "👤 기본정보·사주원국",
         "📆 대운·세운",
-        "📜 종합풀이",
-        "🧾 상담보고서",
+        "🃏 타로 상담",
         "💬 AI 상담실",
+        "📜 종합 상담/결론",
     ])
 
+    # 기존 내부 코드를 크게 흔들지 않고 같은 탭 컨테이너에 이어 붙입니다.
+    tab1 = basic_origin_tab
+    tab2 = basic_origin_tab
+    tab3 = fortune_tab
+    tab7 = tarot_tab
+    tab6 = ai_tab
+    tab4 = final_tab
+    tab5 = final_tab
+
     # -----------------------------------------------------
-    # TAB 1 : 기본정보
+    # TAB 1 : 기본정보·사주원국 (앞부분)
     # -----------------------------------------------------
     with tab1:
         # 핵심 결과를 큰 카드로 표시
@@ -12486,13 +12458,8 @@ try:
                 "따라서 오행 분포와 강약 판단은 참고용입니다."
             )
 
-        st.divider()
-        st.markdown("### ✅ 기본정보 한줄 결론")
-        st.success(basic_total_summary)
-        st.caption("앞의 한자·오행 숫자를 다 외울 필요는 없습니다. 위 총평의 행동 방향부터 보시면 됩니다.")
-
     # -----------------------------------------------------
-    # TAB 2 : 사주원국
+    # TAB 1 : 기본정보·사주원국 (원국 상세)
     # -----------------------------------------------------
     with tab2:
         st.subheader("☯ 사주원국")
@@ -12692,12 +12659,18 @@ try:
         render_readable_dataframe(summary_basic, hide_index=True, width="stretch")
 
         st.divider()
-        st.markdown("### ✅ 사주원국 핵심 해석")
-        st.success(origin_total_summary)
-        st.caption("전문용어보다 '어떤 환경이 잘 맞는지, 무엇을 먼저 바꿔야 하는지'를 중심으로 보세요.")
+        st.markdown("### ✅ 기본정보·사주원국 핵심 결론")
+        st.success(
+            f"{client_name}님은 {day_plain['strength']}이 기본 강점으로 보이며, "
+            f"{day_plain['description']} "
+            f"생활에서는 {month_trait}이 나타나기 쉬운 편입니다. "
+            f"오행 분포에서는 {strongest_element}이 상대적으로 두드러지고 {weakest_element}이 적게 보이지만, "
+            "이것을 좋고 나쁨으로 단정하기보다 잘하는 방식은 살리고 덜 익숙한 부분은 생활 습관과 환경으로 보완하는 것이 좋습니다."
+        )
+        st.caption("이 탭의 핵심은 '나는 어떤 성향이고 어떤 환경에서 힘을 잘 쓰는가'입니다.")
 
     # -----------------------------------------------------
-    # TAB 3 : 대운·세운
+    # TAB 2 : 대운·세운
     # -----------------------------------------------------
     with tab3:
         st.subheader("📆 대운 · 세운")
@@ -12842,139 +12815,20 @@ try:
         st.caption("대운·세운은 사건 예언보다 '지금 무엇을 먼저 하고, 어떤 계획은 작게 시험할지'를 정하는 참고 흐름입니다.")
 
     # -----------------------------------------------------
-    # TAB 4 : 종합풀이
+    # TAB 4 : 종합 상담/결론 — 앞선 분석을 반복하지 않고 최종 상담으로 연결
     # -----------------------------------------------------
     with tab4:
-        st.subheader("📜 종합 풀이")
-
-        st.markdown("### ① 기본 성향")
-        st.write(f"일간은 **{day_master} · {info['name']}**입니다.")
-        st.write(f"오행은 **{info['element']}**, 음양은 **{info['yin_yang']}**입니다.")
-        st.write(f"전통 명리에서는 **{info['symbol']}**에 비유합니다.")
-        st.write(f"주요 키워드: **{info['keywords']}**")
-
-        st.markdown("### ② 오행 구조")
+        st.markdown("## 📜 종합 상담/결론")
         st.write(
-            f"목 {element_counts['목']}, 화 {element_counts['화']}, "
-            f"토 {element_counts['토']}, 금 {element_counts['금']}, 수 {element_counts['수']}"
+            "앞의 기본정보·사주원국과 대운·세운을 다시 반복하지 않고, "
+            "**직접 알려주신 과거·현재·앞으로의 계획과 이번 질문**을 중심으로 최종 상담을 정리합니다."
         )
-        st.write(
-            f"단순 분포에서 가장 많이 드러난 오행은 **{strongest_element}**, "
-            f"가장 적게 드러난 오행은 **{weakest_element}**입니다."
-        )
-
-        st.markdown("### ③ 일간의 힘")
-        st.write(
-            f"기초 분석은 **{basic_strength}**, 월령 관계는 **{month_relation}**, "
-            f"통근 지지는 **{root_count}개**, 천간 지원 글자는 **{visible_support_count}개**입니다."
-        )
-        if not time_known:
-            st.caption(
-                "출생시간 미상으로 시주를 제외한 보조 분석입니다. "
-                "정확한 출생시간을 알게 되면 결과가 달라질 수 있습니다."
-            )
-
-        st.markdown("### ④ 현재 대운과 세운의 주제")
-        if daeun_info:
-            st.info(
-                f"**현재 대운 · {current_daewoon_ten_god} — {daeun_info['title']}**\n\n"
-                f"{daeun_info['text']}"
-            )
-        if sewoon_info:
-            st.info(
-                f"**{current_year}년 · {current_sewoon_ten_god} — {sewoon_info['title']}**\n\n"
-                f"{sewoon_info['text']}"
-            )
-
-        if daeun_info and sewoon_info:
-            if daeun_info["group"] == sewoon_info["group"]:
-                st.success(
-                    f"대운과 올해 세운이 모두 **{daeun_info['group']}** 관련 주제를 강조합니다."
-                )
-            else:
-                st.info(
-                    f"대운은 **{daeun_info['group']}**, "
-                    f"올해 세운은 **{sewoon_info['group']}** 주제가 각각 나타납니다."
-                )
-
-        st.markdown("### ⑤ 재물")
-        if daeun_report:
-            st.write("**현재 대운 기준:** " + daeun_report["money"])
-        if sewoon_report:
-            st.write(f"**{current_year}년 기준:** " + sewoon_report["money"])
-
-        st.markdown("### ⑥ 직업 · 활동")
-        if daeun_report:
-            st.write("**현재 대운 기준:** " + daeun_report["job"])
-        if sewoon_report:
-            st.write(f"**{current_year}년 기준:** " + sewoon_report["job"])
-
-        st.markdown("### ⑦ 인간관계")
-        if daeun_report:
-            st.write("**현재 대운 기준:** " + daeun_report["relation"])
-        if sewoon_report:
-            st.write(f"**{current_year}년 기준:** " + sewoon_report["relation"])
-
-        st.markdown("### ⑧ 현재 상담 초점")
-        f1, f2, f3 = st.columns(3)
-        with f1:
-            st.metric("장기 흐름 · 대운", daeun_info["group"] if daeun_info else "확인")
-        with f2:
-            st.metric(f"{current_year}년 · 세운", sewoon_info["group"] if sewoon_info else "확인")
-        with f3:
-            st.metric("먼저 볼 주제", strongest_theme)
-        st.write(consult_flow)
         st.caption(
-            "이 표시는 0–100점 평가가 아니라 대운과 세운의 십신에서 어떤 생활 주제가 나타나는지 정리한 참고 항목입니다."
+            "여기서는 전문용어보다 '그래서 지금 무엇을 판단하고 무엇부터 실행할지'에 초점을 둡니다."
         )
-
-        st.markdown("### ⑨ 앞으로 10년")
-        st.write(
-            f"{start_year}년부터 {end_year}년까지 세운 천간의 십신을 기준으로 보면 "
-            f"**{decade_main_theme} 관련 주제**가 상대적으로 자주 나타납니다."
-        )
-
-        st.markdown("### ⑩ 종합 요약")
-        st.success(report_summary)
-
-        st.warning(
-            "이 보고서는 전통 명리 계산 결과를 정리한 참고용 해석입니다. "
-            "건강·투자·재정·법률·직업 등 중요한 실제 결정은 "
-            "이 보고서 하나만을 근거로 판단하지 마세요."
-        )
-
-        st.divider()
-        st.markdown("### ✅ 종합풀이 최종 결론")
-        st.success(overall_total_summary)
-        st.caption("앞의 ①~⑩을 다 이해하지 못해도 괜찮습니다. 이 총평의 우선순위 ①→②→③만 먼저 실행해보세요.")
-
-        st.markdown("### 💾 보고서 저장")
-
-        st.download_button(
-            label="📥 사주 풀이 보고서 TXT 저장",
-            data=report_text,
-            file_name=f"{name if name else '사주'}_사주풀이.txt",
-            mime="text/plain",
-            width="stretch",
-        )
-
-        if pdf_data is not None:
-            st.download_button(
-                label="📄 사주 풀이 보고서 PDF 저장",
-                data=pdf_data,
-                file_name=f"{name if name else '사주'}_사주풀이.pdf",
-                mime="application/pdf",
-                width="stretch",
-            )
-            st.caption("PDF 버튼이 보이면 눌러 저장한 뒤, 한글이 정상인지 확인해 주세요.")
-        else:
-            st.error(
-                "PDF 버튼을 만들지 못했습니다. "
-                "Windows 한글 폰트를 찾지 못했거나 폰트 등록에 실패했습니다."
-            )
 
     # -----------------------------------------------------
-    # TAB 5 : 상담보고서 — 일반인 친화 쉬운말 모드
+    # TAB 5 : 종합 상담/결론 — 생활 중심 최종 정리
     # -----------------------------------------------------
     with tab5:
         safe_client_name = escape(client_name)
@@ -12983,8 +12837,8 @@ try:
         st.markdown(
             f"""
             <div class="consult-hero">
-                <div class="consult-kicker">쉽게 읽는 상담 안내서 · v{APP_VERSION}</div>
-                <div class="consult-title">{safe_client_name}님의 쉽게 읽는 사주 상담</div>
+                <div class="consult-kicker">종합 상담/결론 · v{APP_VERSION}</div>
+                <div class="consult-title">{safe_client_name}님의 최종 맞춤 상담</div>
                 <div class="consult-sub">
                     전문용어는 짧게 줄이고, 과거·현재·앞으로의 흐름과 생활방식·사고방식·실행 방향을 중심으로 풀었습니다.
                     미래를 단정하기보다 스스로 선택할 힘을 키우는 참고자료로 활용해 주세요.
@@ -12999,11 +12853,6 @@ try:
         st.markdown(f"**현재** — {present_story_display}")
         st.markdown(f"**앞으로** — {future_story_display}")
         st.caption("이 세 가지 실제 정보가 사주 해석보다 우선하며, 아래 상담은 이 내용을 중심으로 정리합니다.")
-
-        st.markdown(f"### 🌟 {client_name}님, 먼저 이것만 보세요")
-        st.info(f"**강점** — {safe_points[0].split('|', 1)[-1].strip()}")
-        st.info(f"**현재 큰 방향** — {safe_points[1].split('|', 1)[-1].strip()}")
-        st.info(f"**올해 먼저 챙길 것** — {safe_points[2].split('|', 1)[-1].strip()}")
 
         st.markdown(f"### 🧭 {client_name}님의 과거 · 현재 · 앞으로")
         st.markdown(f"#### ⏪ 과거에 반복되기 쉬운 모습")
@@ -13074,9 +12923,9 @@ try:
             )
 
         st.divider()
-        st.markdown(f"### ✅ {client_name}님의 맞춤 상담 결론")
+        st.markdown(f"### ✅ {client_name}님의 최종 맞춤 상담 결론")
         st.success(report_total_summary)
-        st.caption("이 총평은 사주 용어보다 실제 생활정보·생활방식·사고방식·실행 방향을 중심으로 정리했습니다.")
+        st.caption("앞의 분석을 다시 반복하지 않고, 실제 생활정보와 이번 질문을 기준으로 마지막 결론만 정리했습니다.")
 
         st.markdown("### 📝 상담 메모")
         consult_note = st.text_area(
@@ -13163,7 +13012,7 @@ try:
         )
 
     # -----------------------------------------------------
-    # TAB 6 : AI 상담실
+    # TAB 4 : AI 상담실
     # -----------------------------------------------------
     with tab6:
         st.markdown("## 💬 AI 상담실")
@@ -13563,28 +13412,9 @@ try:
             show_affiliate_recommendations(ai_category, "ai_result")
 
 
-        st.divider()
-        st.markdown("### ✅ AI 상담 핵심 정리")
-        _ai_summary_present = str(ai_present_story or present_story_clean or "").strip()
-        _ai_summary_future = str(ai_future_story or future_story_clean or "").strip()
-        if _ai_summary_present or _ai_summary_future:
-            _ai_summary_parts = []
-            if _ai_summary_present:
-                _ai_summary_parts.append(f"현재는 '{_ai_summary_present}'을 중심으로 현실 조건을 먼저 살펴보는 것이 중요합니다.")
-            if _ai_summary_future:
-                _ai_summary_parts.append(f"앞으로는 '{_ai_summary_future}'을 한 번에 크게 추진하기보다 작은 시험과 점검을 거쳐 움직이는 것이 좋습니다.")
-            _ai_summary_parts.append(f"사주 흐름은 참고로만 두고, 지금 가장 먼저 할 행동은 '{consult_actions[0]}'처럼 구체적으로 정해보세요.")
-            st.success(" ".join(_ai_summary_parts))
-        else:
-            st.success(
-                f"{client_name}님에게 지금 중요한 것은 {daeun_plain['theme']}을 현실 생활에서 정리하고, "
-                f"{sewoon_plain['theme']}을 작은 행동으로 옮기는 것입니다. "
-                f"첫 행동은 '{consult_actions[0]}'부터 시작해보세요."
-            )
-        st.caption("AI 답변이 길게 느껴지면 위 핵심 정리에서 '지금 무엇을 할지'만 먼저 확인해 보세요.")
 
     # -----------------------------------------------------
-    # TAB 7 : 타로 상담
+    # TAB 3 : 타로 상담
     # -----------------------------------------------------
     with tab7:
         st.markdown("## 🃏 타로 상담")
@@ -13885,24 +13715,6 @@ try:
             st.info("질문을 적은 뒤 **🃏 카드 뽑기**를 눌러주세요.")
 
 
-        st.divider()
-        st.markdown("### ✅ 타로 전체 메시지")
-        if tarot_cards:
-            _tarot_names = " · ".join(str(card.get("name", "")) for card in tarot_cards[:5] if card.get("name"))
-            _tarot_keywords = []
-            for _card in tarot_cards[:5]:
-                _kw = str(_card.get("keywords", "") or "").strip()
-                if _kw:
-                    _tarot_keywords.append(_kw)
-            _tarot_keyword_text = " / ".join(_tarot_keywords[:3])
-            st.success(
-                f"{client_name}님이 뽑은 카드는 {_tarot_names}입니다. "
-                + (f"전체적으로 {_tarot_keyword_text} 같은 주제를 돌아보게 합니다. " if _tarot_keyword_text else "")
-                + "카드가 미래를 결정한다기보다, 지금 질문에서 무엇을 확인하고 어떤 행동을 해볼지 정리하는 참고로 활용해보세요."
-            )
-        else:
-            st.info("카드를 뽑으면 이곳에 전체 카드 흐름을 한눈에 이해할 수 있는 종합 총평이 표시됩니다.")
-        st.caption("카드 하나하나보다 전체 카드가 공통으로 말하는 주제와 다음 행동을 먼저 보세요.")
 
 
     st.divider()
