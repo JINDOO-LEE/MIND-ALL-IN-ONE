@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.6"
+APP_VERSION = "3.9.0"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -9976,6 +9976,21 @@ with st.form("saju_input_form"):
         placeholder="예: 유튜브를 꾸준히 운영해 작은 수입을 만들고, 사람들과 교류하는 활동도 시작하고 싶습니다.",
     )
 
+    focus_choice = st.selectbox(
+        "4. 이번 상담에서 가장 먼저 보고 싶은 분야",
+        [
+            "자동 추천",
+            "돈·재정",
+            "일·직업",
+            "사업·새로운 활동",
+            "관계·가족",
+            "배움·자격",
+            "이사·생활환경",
+        ],
+        key="focus_choice",
+        help="여러 분야를 한꺼번에 반복 설명하지 않고, 선택한 한 분야를 중심으로 구체적인 행동 방향을 보여줍니다.",
+    )
+
     submitted = st.form_submit_button("🔮 사주 분석하기", width="stretch")
 
 if "analysis_ready" not in st.session_state:
@@ -11041,6 +11056,78 @@ try:
         ],
     )
 
+    focus_theme_map = {
+        "돈·재정": "재물",
+        "일·직업": "직업",
+        "사업·새로운 활동": "활동",
+        "관계·가족": "관계",
+        "배움·자격": "학습",
+        "이사·생활환경": "활동",
+    }
+    selected_focus_theme = focus_theme_map.get(focus_choice, strongest_theme)
+    selected_focus_label = focus_choice if focus_choice != "자동 추천" else {
+        "재물": "돈·재정",
+        "직업": "일·직업",
+        "활동": "사업·새로운 활동",
+        "관계": "관계·가족",
+        "학습": "배움·자격",
+    }.get(strongest_theme, "전체")
+
+    focus_roadmap_map = {
+        "재물": {
+            "summary": "돈 문제는 운을 기다리기보다 현재 현금흐름과 지출 구조를 숫자로 확인하는 것이 먼저입니다.",
+            "30d": "최근 30일 지출을 고정비·생활비·선택지출로 나누고, 줄일 항목 1개와 유지할 항목 1개를 정하세요.",
+            "3m": "3개월 동안 매달 같은 날 수입·지출·저축액을 기록해 실제 변화가 있는지 확인하세요.",
+            "6m": "6개월 뒤에는 비상자금, 부채, 반복지출을 다시 비교하고 큰 지출이나 투자 계획을 재검토하세요.",
+            "metric": "매달 남는 금액, 줄어든 반복지출, 비상자금 증가액",
+            "avoid": "불안해서 한 번에 큰돈을 움직이거나, 확인 없이 새로운 투자·대출을 늘리는 것",
+        },
+        "직업": {
+            "summary": "직업 문제는 '계속할까 말까'보다 지금 가진 경험이 어느 역할에서 실제로 통하는지 시험해보는 것이 먼저입니다.",
+            "30d": "잘하는 일 3가지와 하기 싫은 일 3가지를 적고, 관심 직무 1개를 정해 실제 공고나 업무 사례를 5개 확인하세요.",
+            "3m": "3개월 안에 관련 교육·지원·프로젝트 중 하나를 실제로 해보고 시간·수입·만족도를 기록하세요.",
+            "6m": "6개월 뒤 기록을 보고 계속할지, 역할을 바꿀지, 다른 길을 시험할지 결정하세요.",
+            "metric": "지원/제안 횟수, 실제 업무 경험 횟수, 시간 대비 만족도",
+            "avoid": "준비 없이 현재 일을 바로 그만두거나 한 번의 결과만으로 적성을 단정하는 것",
+        },
+        "활동": {
+            "summary": "새 사업이나 활동은 크게 시작하기보다 작은 결과물을 먼저 만들어 시장과 내 지속가능성을 함께 확인하는 것이 좋습니다.",
+            "30d": "한 가지 아이디어만 골라 최소 결과물 1개를 만들고 실제 사람 5명 이상의 반응을 받아보세요.",
+            "3m": "3개월 동안 같은 주제로 6~12회 정도 반복 실행하고 조회·문의·판매·참여 같은 반응을 기록하세요.",
+            "6m": "6개월 뒤 시간·비용·반응을 비교해 확대, 유지, 중단 중 하나를 결정하세요.",
+            "metric": "완성한 결과물 수, 실제 반응 수, 문의/판매/재방문 수",
+            "avoid": "도구·장비·광고비부터 크게 쓰거나 여러 아이디어를 동시에 벌이는 것",
+        },
+        "관계": {
+            "summary": "관계 문제는 상대를 바꾸기보다 내가 원하는 거리와 대화 기준을 먼저 정하는 것이 현실적입니다.",
+            "30d": "가장 신경 쓰이는 관계 1개만 골라 사실·내 감정·내가 원하는 것을 각각 한 문장으로 적어보세요.",
+            "3m": "3개월 동안 중요한 대화 뒤에 편안함·긴장감·반복되는 갈등을 짧게 기록해 패턴을 확인하세요.",
+            "6m": "6개월 뒤 가까이할 관계, 같은 거리를 유지할 관계, 거리를 둘 관계를 현실적으로 나눠보세요.",
+            "metric": "갈등 빈도, 편안한 대화 횟수, 약속이 지켜진 횟수",
+            "avoid": "상대 마음을 미리 단정하거나 모든 관계를 혼자 책임지려는 것",
+        },
+        "학습": {
+            "summary": "배움은 많이 아는 것보다 실제로 써먹을 수 있는 한 가지 기술을 반복해서 익히는 것이 중요합니다.",
+            "30d": "배울 주제 1개를 정해 주 3회 20~30분씩 공부하고, 매주 한 번 실제로 적용해보세요.",
+            "3m": "3개월 안에 작은 결과물·시험·과제·작품 중 하나를 완성해 실력을 눈으로 확인하세요.",
+            "6m": "6개월 뒤에는 배운 것이 생활·수입·일에 실제 도움이 되었는지 보고 다음 수준을 정하세요.",
+            "metric": "학습 횟수, 완성 결과물 수, 실제 적용 횟수",
+            "avoid": "강의만 계속 모으고 실제 연습이나 결과물 만들기를 미루는 것",
+        },
+    }
+
+    focus_roadmap = focus_roadmap_map.get(
+        selected_focus_theme,
+        {
+            "summary": "지금 가장 신경 쓰이는 한 가지를 정하고, 실제 행동과 결과를 기록하면서 방향을 확인하는 것이 좋습니다.",
+            "30d": "30일 동안 한 가지 행동을 반복해 실제 변화가 있는지 확인하세요.",
+            "3m": "3개월 뒤 기록을 비교해 계속할지 수정할지 결정하세요.",
+            "6m": "6개월 뒤에는 시간·비용·만족도를 함께 보고 다음 방향을 정하세요.",
+            "metric": "실행 횟수, 실제 변화, 만족도",
+            "avoid": "여러 목표를 동시에 시작해 무엇이 효과가 있었는지 알 수 없게 만드는 것",
+        },
+    )
+
     # -----------------------------------------------------
     # v3.8.5 : 실제 입력내용 + 구체적 행동을 반영한 종합 총평
     # -----------------------------------------------------
@@ -11095,10 +11182,11 @@ try:
 
     report_total_summary = (
         f"**상담보고서 결론:** {client_name}님이 직접 알려준 삶의 흐름은 과거 '{past_short}', 현재 '{present_short}', 앞으로 '{future_short}'입니다. "
-        "따라서 상담의 중심은 사주용어보다 **현재 생활을 어떻게 정리하고 앞으로의 계획을 어떤 방식으로 실행할지**에 두는 것이 맞습니다. "
+        f"이번 상담에서는 **{selected_focus_label}**을 우선해서 보는 것이 좋습니다. "
+        f"{focus_roadmap['summary']} "
         f"생활방식은 {consult_lifestyle} "
         f"사고방식은 {consult_mindset} "
-        f"그리고 실제 실행은 오늘 '{consult_actions[0]}', 이번 주 '{consult_actions[1]}', 이번 달 '{consult_actions[2]}' 순서로 진행해보세요."
+        f"그리고 30일 동안은 '{focus_roadmap['30d']}'부터 실행하고, 3개월 뒤에는 '{focus_roadmap['metric']}'을 기준으로 계속할지 수정할지 판단해보세요."
     )
 
     consult_encouragement = ENCOURAGEMENT_MAP.get(
@@ -11272,14 +11360,16 @@ try:
 [앞으로의 방향]
 {consult_future}
 
-[돈과 생활 기반]
-{consult_money}
+[이번 상담 우선 관심사]
+{selected_focus_label}
+{focus_roadmap["summary"]}
 
-[일과 활동]
-{consult_job}
-
-[사람 관계]
-{consult_relation}
+[30일 · 3개월 · 6개월 로드맵]
+30일: {focus_roadmap["30d"]}
+3개월: {focus_roadmap["3m"]}
+6개월: {focus_roadmap["6m"]}
+확인할 숫자·증거: {focus_roadmap["metric"]}
+피하면 좋은 것: {focus_roadmap["avoid"]}
 
 [{client_name}님에게 맞는 생활방식]
 {consult_lifestyle}
@@ -11332,14 +11422,16 @@ try:
 [앞으로의 방향]
 {consult_future}
 
-[돈과 생활 기반]
-{consult_money}
+[이번 상담 우선 관심사]
+{selected_focus_label}
+{focus_roadmap["summary"]}
 
-[일과 활동]
-{consult_job}
-
-[사람 관계]
-{consult_relation}
+[30일 · 3개월 · 6개월 로드맵]
+30일: {focus_roadmap["30d"]}
+3개월: {focus_roadmap["3m"]}
+6개월: {focus_roadmap["6m"]}
+확인할 숫자·증거: {focus_roadmap["metric"]}
+피하면 좋은 것: {focus_roadmap["avoid"]}
 
 [생활방식]
 {consult_lifestyle}
@@ -12848,22 +12940,23 @@ try:
         st.markdown("#### ⏩ 앞으로의 방향")
         st.info(consult_future)
 
-        st.markdown(f"### 💬 {client_name}님의 관심사를 생활로 풀어보면")
-        t1, t2 = st.columns(2)
-        with t1:
-            st.markdown(
-                f'<div class="consult-topic-card"><div class="consult-topic-title">💰 돈과 생활 기반</div>{escape(consult_money)}</div>',
-                unsafe_allow_html=True,
-            )
-        with t2:
-            st.markdown(
-                f'<div class="consult-topic-card"><div class="consult-topic-title">💼 일과 활동</div>{escape(consult_job)}</div>',
-                unsafe_allow_html=True,
-            )
-        st.markdown(
-            f'<div class="consult-topic-card"><div class="consult-topic-title">🤝 사람 관계</div>{escape(consult_relation)}</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(f"### 🎯 {client_name}님의 이번 상담 우선 관심사 · {selected_focus_label}")
+        st.info(focus_roadmap["summary"])
+
+        st.markdown("#### 🗺️ 30일 · 3개월 · 6개월 로드맵")
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            st.markdown("**30일**")
+            st.write(focus_roadmap["30d"])
+        with r2:
+            st.markdown("**3개월**")
+            st.write(focus_roadmap["3m"])
+        with r3:
+            st.markdown("**6개월**")
+            st.write(focus_roadmap["6m"])
+
+        st.success(f"**확인할 숫자·증거** — {focus_roadmap['metric']}")
+        st.warning(f"**피하면 좋은 것** — {focus_roadmap['avoid']}")
 
         st.markdown(f"### 🏡 {client_name}님에게 맞는 생활방식")
         st.success(consult_lifestyle)
