@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.2"
+APP_VERSION = "3.8.3"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -10969,6 +10969,44 @@ try:
         "이 용어 자체보다 위에서 설명한 성향·생활방식·실행 방향을 먼저 보는 것을 권합니다."
     )
 
+    # -----------------------------------------------------
+    # v3.8.3 : 각 분석 탭 끝에 보여줄 쉬운 종합 총평
+    # -----------------------------------------------------
+    basic_total_summary = (
+        f"{client_name}님은 {day_plain['strength']}이 기본 장점으로 보입니다. "
+        f"{strength_lifestyle} "
+        "기본정보에서는 한자나 오행 숫자 자체보다, 내가 어떤 환경에서 힘이 나고 어떤 상황에서 쉽게 지치는지를 이해하는 것이 핵심입니다."
+    )
+
+    origin_total_summary = (
+        f"{client_name}님의 사주원국을 생활 언어로 요약하면, {day_plain['description']} "
+        f"생활 방식에서는 {month_trait}이 눈에 띄는 편입니다. "
+        f"오행 분포에서 {strongest_element}이 상대적으로 많이, {weakest_element}이 상대적으로 적게 보이지만 "
+        "이 숫자 하나만으로 좋고 나쁨을 판단하지 말고 실제 성향과 생활 경험을 함께 보는 것이 중요합니다."
+    )
+
+    fortune_total_summary = (
+        f"{client_name}님의 현재 큰 흐름은 '{daeun_plain['theme']}', "
+        f"{current_year}년의 초점은 '{sewoon_plain['theme']}'으로 정리할 수 있습니다. "
+        f"앞으로는 {decade_plain} 관련 주제가 반복해서 관심사가 될 수 있으므로, "
+        "큰 결정을 한 번에 내리기보다 작은 시험을 해보고 결과를 확인한 뒤 다음 단계를 정하는 방식이 좋습니다."
+    )
+
+    overall_total_summary = (
+        f"한마디로 정리하면, {client_name}님은 {day_plain['strength']}을 살리면서 "
+        f"지금은 {daeun_plain['theme']}을 중심으로 생활의 기준을 세우는 것이 중요합니다. "
+        f"올해는 {sewoon_plain['theme']}을 먼저 챙기고, "
+        f"앞으로는 {decade_plain}과 관련된 계획을 작은 단계로 시험해보는 방향이 현실적입니다. "
+        f"그래서 지금 가장 먼저 할 일은 '{consult_actions[0]}'입니다."
+    )
+
+    report_total_summary = (
+        f"{client_name}님의 실제 과거·현재·앞으로의 계획을 가장 먼저 놓고 보면, "
+        f"현재는 {daeun_plain['theme']}을 정리하면서 {sewoon_plain['theme']}을 현실적으로 실행해보는 시점으로 볼 수 있습니다. "
+        f"생활에서는 {consult_lifestyle} "
+        f"생각의 기준은 '{consult_mindset}'처럼 잡고, 한 번에 크게 바꾸기보다 오늘·이번 주·이번 달 행동을 이어가는 것이 핵심입니다."
+    )
+
     question_map = {
         "재물": [
             "요즘 돈과 관련해 가장 마음을 편하게 만들고 싶은 부분은 무엇인가요?",
@@ -11235,6 +11273,9 @@ try:
 [전문용어는 이것만 간단히]
 {technical_brief}
 
+[종합 총평]
+{report_total_summary}
+
 [마음에 남겨둘 한마디]
 {consult_encouragement}
 {consult_closing}
@@ -11291,6 +11332,9 @@ try:
 
 [전문용어 간단 요약]
 {technical_brief}
+
+[종합 총평]
+{report_total_summary}
 
 [상담자 계산 참고]
 {technical_summary}
@@ -12255,6 +12299,11 @@ try:
                 "따라서 오행 분포와 강약 판단은 참고용입니다."
             )
 
+        st.divider()
+        st.markdown("### ✅ 기본정보 종합 총평")
+        st.success(basic_total_summary)
+        st.caption("앞의 한자·오행 숫자를 모두 기억하지 않아도 됩니다. 위 총평만 이해해도 기본 흐름을 잡을 수 있습니다.")
+
     # -----------------------------------------------------
     # TAB 2 : 사주원국
     # -----------------------------------------------------
@@ -12455,6 +12504,11 @@ try:
         })
         render_readable_dataframe(summary_basic, hide_index=True, width="stretch")
 
+        st.divider()
+        st.markdown("### ✅ 사주원국 종합 총평")
+        st.success(origin_total_summary)
+        st.caption("전문용어보다 '나는 어떤 상황에서 힘이 나고, 어떤 방식으로 행동하는가'를 중심으로 보세요.")
+
     # -----------------------------------------------------
     # TAB 3 : 대운·세운
     # -----------------------------------------------------
@@ -12595,6 +12649,11 @@ try:
             "원국, 대운, 세운의 관계를 함께 봐야 합니다."
         )
 
+        st.divider()
+        st.markdown("### ✅ 대운·세운 종합 총평")
+        st.success(fortune_total_summary)
+        st.caption("대운·세운은 미래 사건을 확정하는 예언이 아니라, 지금과 앞으로 무엇을 준비할지 보는 참고 흐름입니다.")
+
     # -----------------------------------------------------
     # TAB 4 : 종합풀이
     # -----------------------------------------------------
@@ -12696,6 +12755,11 @@ try:
             "건강·투자·재정·법률·직업 등 중요한 실제 결정은 "
             "이 보고서 하나만을 근거로 판단하지 마세요."
         )
+
+        st.divider()
+        st.markdown("### ✅ 종합풀이 최종 총평")
+        st.success(overall_total_summary)
+        st.caption("앞의 ①~⑩ 내용을 다 기억하지 않아도 됩니다. 이 총평을 먼저 이해하고 필요한 항목만 다시 보시면 됩니다.")
 
         st.markdown("### 💾 보고서 저장")
 
@@ -12814,6 +12878,11 @@ try:
                 "이 부분은 상담자가 계산 근거를 확인하기 위한 참고입니다. "
                 f"{client_name}님에게는 위의 쉬운 설명을 먼저 보여주는 것을 권장합니다."
             )
+
+        st.divider()
+        st.markdown(f"### ✅ {client_name}님의 상담보고서 종합 총평")
+        st.success(report_total_summary)
+        st.caption("이 총평은 사주 용어보다 실제 생활정보·생활방식·사고방식·실행 방향을 중심으로 정리했습니다.")
 
         st.markdown("### 📝 상담 메모")
         consult_note = st.text_area(
@@ -13300,6 +13369,26 @@ try:
             show_affiliate_recommendations(ai_category, "ai_result")
 
 
+        st.divider()
+        st.markdown("### ✅ AI 상담실 종합 총평")
+        _ai_summary_present = str(ai_present_story or present_story_clean or "").strip()
+        _ai_summary_future = str(ai_future_story or future_story_clean or "").strip()
+        if _ai_summary_present or _ai_summary_future:
+            _ai_summary_parts = []
+            if _ai_summary_present:
+                _ai_summary_parts.append(f"현재는 '{_ai_summary_present}'을 중심으로 현실 조건을 먼저 살펴보는 것이 중요합니다.")
+            if _ai_summary_future:
+                _ai_summary_parts.append(f"앞으로는 '{_ai_summary_future}'을 한 번에 크게 추진하기보다 작은 시험과 점검을 거쳐 움직이는 것이 좋습니다.")
+            _ai_summary_parts.append(f"사주 흐름은 참고로만 두고, 지금 가장 먼저 할 행동은 '{consult_actions[0]}'처럼 구체적으로 정해보세요.")
+            st.success(" ".join(_ai_summary_parts))
+        else:
+            st.success(
+                f"{client_name}님에게 지금 중요한 것은 {daeun_plain['theme']}을 현실 생활에서 정리하고, "
+                f"{sewoon_plain['theme']}을 작은 행동으로 옮기는 것입니다. "
+                f"첫 행동은 '{consult_actions[0]}'부터 시작해보세요."
+            )
+        st.caption("AI 상담의 긴 답변이 복잡하게 느껴질 때는 이 총평을 기준으로 다시 보시면 됩니다.")
+
     # -----------------------------------------------------
     # TAB 7 : 타로 상담
     # -----------------------------------------------------
@@ -13600,6 +13689,26 @@ try:
 
         else:
             st.info("질문을 적은 뒤 **🃏 카드 뽑기**를 눌러주세요.")
+
+
+        st.divider()
+        st.markdown("### ✅ 타로 상담 종합 총평")
+        if tarot_cards:
+            _tarot_names = " · ".join(str(card.get("name", "")) for card in tarot_cards[:5] if card.get("name"))
+            _tarot_keywords = []
+            for _card in tarot_cards[:5]:
+                _kw = str(_card.get("keywords", "") or "").strip()
+                if _kw:
+                    _tarot_keywords.append(_kw)
+            _tarot_keyword_text = " / ".join(_tarot_keywords[:3])
+            st.success(
+                f"{client_name}님이 뽑은 카드는 {_tarot_names}입니다. "
+                + (f"전체적으로 {_tarot_keyword_text} 같은 주제를 돌아보게 합니다. " if _tarot_keyword_text else "")
+                + "카드가 미래를 결정한다기보다, 지금 질문에서 무엇을 확인하고 어떤 행동을 해볼지 정리하는 참고로 활용해보세요."
+            )
+        else:
+            st.info("카드를 뽑으면 이곳에 전체 카드 흐름을 한눈에 이해할 수 있는 종합 총평이 표시됩니다.")
+        st.caption("카드별 설명이 복잡해도 마지막 종합 총평만 읽으면 전체 방향을 이해할 수 있도록 구성했습니다.")
 
 
     st.divider()
