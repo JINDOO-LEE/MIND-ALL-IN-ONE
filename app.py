@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.3"
+APP_VERSION = "3.8.4"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -10997,7 +10997,7 @@ try:
         f"지금은 {daeun_plain['theme']}을 중심으로 생활의 기준을 세우는 것이 중요합니다. "
         f"올해는 {sewoon_plain['theme']}을 먼저 챙기고, "
         f"앞으로는 {decade_plain}과 관련된 계획을 작은 단계로 시험해보는 방향이 현실적입니다. "
-        f"그래서 지금 가장 먼저 할 일은 '{consult_actions[0]}'입니다."
+        "지금 가장 마음에 걸리는 문제 하나를 정하고, 이번 주에 실제로 확인할 사실 1개와 실행할 행동 1개부터 정해보세요."
     )
 
     report_total_summary = (
