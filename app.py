@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.0"
+APP_VERSION = "3.8.1"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4342,6 +4342,14 @@ def build_ai_saju_context(
 """.strip()
 
 
+def normalize_client_name(value):
+    """상담 화면에서 고객 이름을 한 가지 방식으로 통일합니다."""
+    raw = str(value or "").strip()
+    if raw.endswith("님"):
+        raw = raw[:-1].strip()
+    return raw or "고객"
+
+
 def _clip_ai_text(value, limit):
     """긴 입력이 API 비용을 불필요하게 늘리지 않도록 안전하게 잘라냅니다."""
     text = str(value or "").strip()
@@ -4393,7 +4401,7 @@ def ask_ai_counselor(
 반드시 지킬 원칙:
 1. 먼저 사용자의 질문에 쉬운 말로 직접 답합니다. 어려운 명리 전문용어와 한자 간지는 기본 답변에서 쓰지 않습니다. 꼭 필요하면 쉬운 뜻을 먼저 설명하고 전문용어는 괄호 안에 한 번만 적습니다.
 1-1. 명리 용어를 꼭 써야 한다면 용어만 적지 말고, 바로 이어서 "어떤 성향인지"를 생활 언어로 한 문장 설명합니다. 예: "정관은 규칙과 책임을 중요하게 여기고 신뢰를 쌓으려는 성향입니다."
-1-2. 상담 대상의 이름이 제공되면 "상담 받는 분", "사용자" 같은 표현 대신 이름+님을 자연스럽게 사용합니다. 한 답변에서 2~4회 정도 호명하되 매 문장마다 반복하지 않습니다.
+1-2. 상담 대상의 이름이 제공되면 "상담 받는 분", "사용자", "고객님", "사용자님" 같은 일반 호칭을 쓰지 말고 반드시 이름+님으로 통일합니다. 한 답변에서 2~4회 정도 자연스럽게 호명하되 매 문장마다 반복하지 않습니다.
 1-3. 답변의 중심은 전문용어 설명이 아니라 과거에 반복되기 쉬운 방식, 현재 상황, 앞으로의 선택 방향, 생활방식, 사고방식, 구체적인 실행입니다.
 2. 나이·성별만으로 성격, 역할, 가족관계, 경제상황을 추측하거나 고정관념을 적용하지 않습니다.
 3. 사용자가 직접 알려준 생활환경과 고민을 가장 중요한 현실 정보로 봅니다. 사주 해석과 실제 상황이 다르면 실제 상황을 우선합니다.
@@ -9851,7 +9859,15 @@ with st.form("saju_input_form"):
     left, right = st.columns(2)
 
     with left:
-        name = st.text_input("이름", placeholder="예: 홍길동")
+        _profile_for_name = st.session_state.get("customer_profile") or {}
+        _profile_nickname = normalize_client_name(_profile_for_name.get("nickname", ""))
+        _name_default = "" if _profile_nickname == "고객" else _profile_nickname
+        name = st.text_input(
+            "이름",
+            value=_name_default,
+            placeholder="예: 홍길동",
+            help="입력한 이름은 상담 결과 전체에서 '홍길동님'처럼 사용됩니다.",
+        ).strip()
 
         if calendar_type == "양력":
             birth_input_date = st.date_input(
@@ -9931,10 +9947,14 @@ if "analysis_ready" not in st.session_state:
     st.session_state["analysis_ready"] = False
 
 if submitted:
-    st.session_state["analysis_ready"] = True
-    _journey_profile = st.session_state.get("customer_profile")
-    if _journey_profile and _journey_profile.get("code"):
-        mark_customer_journey(_journey_profile.get("code"), "saju_done")
+    if not str(name or "").strip():
+        st.session_state["analysis_ready"] = False
+        st.error("상담 결과에 이름을 표시하려면 **이름을 입력해 주세요.**")
+    else:
+        st.session_state["analysis_ready"] = True
+        _journey_profile = st.session_state.get("customer_profile")
+        if _journey_profile and _journey_profile.get("code"):
+            mark_customer_journey(_journey_profile.get("code"), "saju_done")
 
 if not st.session_state["analysis_ready"]:
     st.info("정보를 입력한 뒤 **🔮 사주 분석하기**를 눌러주세요.")
@@ -10663,8 +10683,10 @@ try:
     daeun_report = REPORT_MEANING.get(current_daewoon_ten_god)
     sewoon_report = REPORT_MEANING.get(current_sewoon_ten_god)
 
+    client_name = normalize_client_name(name)
+
     report_summary = (
-        f"{name if name else '사용자'}님의 일간은 {info['name']}이며, "
+        f"{client_name}님의 일간은 {info['name']}이며, "
         f"현재 대운은 {current_daewoon_hanja}, "
         f"{current_year}년 세운은 {current_sewoon_hanja}입니다. "
         f"현재 운에서는 {strongest_theme} 관련 주제가 상대적으로 눈에 띄며, "
@@ -10681,7 +10703,6 @@ try:
     # v1.5 일반인 친화 상담 문장
     # 전문가용 계산은 그대로 두고, 화면/PDF의 상담 문장만 쉽게 풉니다.
     # -----------------------------------------------------
-    client_name = str(name).strip() if str(name or "").strip() else "고객"
 
     default_plain = {
         "theme": "지금 상황을 차분히 살피고 내 기준을 세우는 과정",
