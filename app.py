@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.7.1"
+APP_VERSION = "3.7.2"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -3025,6 +3025,36 @@ PLAIN_TEN_GOD_GUIDE = {
     },
 }
 
+TEN_GOD_TRAIT_EXPLANATION = {
+    "비견": "자기 기준이 분명하고 독립적으로 움직이려는 성향입니다. 스스로 결정할 때 힘이 나지만, 내 방식만 고집하면 협업이 답답해질 수 있습니다.",
+    "겁재": "경쟁과 변화 속에서 빠르게 대응하는 성향입니다. 사람들과 부딪히며 성장할 수 있지만, 공동 돈·역할·책임의 경계를 분명히 하는 것이 중요합니다.",
+    "식신": "꾸준히 만들고 돌보고 결과를 쌓는 성향입니다. 한 번에 크게 승부하기보다 반복과 성실함에서 강점이 드러나는 편입니다.",
+    "상관": "표현력이 강하고 기존 방식보다 새로운 방법을 찾으려는 성향입니다. 아이디어와 말솜씨가 장점이지만, 표현이 너무 직선적이면 갈등이 생길 수 있습니다.",
+    "정재": "계획적으로 관리하고 안정적인 기반을 만들려는 성향입니다. 약속·생활비·일정처럼 눈에 보이는 기준을 잘 지키는 편입니다.",
+    "편재": "사람과 기회를 넓게 보고 빠르게 움직이는 성향입니다. 영업·사업·프로젝트처럼 변화가 있는 환경에 잘 맞지만, 너무 많은 기회를 동시에 잡지 않는 것이 중요합니다.",
+    "정관": "규칙과 책임을 중요하게 여기고 신뢰를 쌓으려는 성향입니다. 맡은 역할을 성실히 수행하는 장점이 있지만, 지나친 책임감으로 스스로를 압박할 수 있습니다.",
+    "편관": "압박이나 어려운 과제가 있어도 버티고 해결하려는 성향입니다. 위기 대응과 실행력이 강하지만, 늘 긴장 상태로 버티지 않도록 휴식과 역할 분담이 필요합니다.",
+    "정인": "배우고 정리하고 보호받는 안정감을 중요하게 여기는 성향입니다. 공부·문서·자격·조언을 잘 활용하지만, 준비만 오래 하고 실행이 늦어질 수 있습니다.",
+    "편인": "남들과 다른 관점으로 깊이 생각하고 전문성을 만들려는 성향입니다. 연구·기획·새 기술에 강점이 있지만, 생각이 많아 실행이 늦어질 수 있습니다.",
+}
+
+MONTH_RELATION_TRAIT_EXPLANATION = {
+    "비겁": "내 기준과 자율성을 중요하게 여기며 스스로 움직이려는 성향",
+    "인성": "배우고 이해하고 도움을 연결하면서 안정감을 만드는 성향",
+    "식상": "생각을 말·글·행동·결과물로 밖에 표현하려는 성향",
+    "재성": "돈·시간·물건·성과처럼 현실적인 자원을 관리하려는 성향",
+    "관성": "책임·규칙·약속·역할을 중요하게 여기며 신뢰를 쌓으려는 성향",
+    "기타": "한 가지 성향보다 여러 방식이 상황에 따라 섞여 나타나는 편",
+}
+
+def ten_god_trait_text(name):
+    key = str(name or "").strip()
+    return TEN_GOD_TRAIT_EXPLANATION.get(
+        key,
+        "한 가지 성격으로 단정하기보다, 현재 상황에서 어떤 행동 방식이 두드러지는지 참고하는 관계 유형입니다.",
+    )
+
+
 PLAIN_MONTH_RELATION = {
     "비겁": "내 기준을 지키고 스스로 움직이는 힘",
     "인성": "배우고 도움을 받으며 기반을 다지는 힘",
@@ -4258,8 +4288,8 @@ def build_ai_saju_context(
 [사주 계산에서 참고할 핵심만 요약]
 - 타고난 강점 설명: {day_master_plain}
 - 균형 참고: {basic_strength_plain}
-- 현재 큰 흐름의 관계 유형: {current_daewoon_ten_god}
-- 올해 흐름의 관계 유형: {current_sewoon_ten_god}
+- 현재 큰 흐름의 관계 유형: {current_daewoon_ten_god} — {ten_god_trait_text(current_daewoon_ten_god)}
+- 올해 흐름의 관계 유형: {current_sewoon_ten_god} — {ten_god_trait_text(current_sewoon_ten_god)}
 - 현재 눈에 띄는 생활 주제: {strongest_theme}
 - 앞으로 10년에서 자주 나타나는 주제: {decade_main_theme}
 - 기존 상담 핵심: {points_text}
@@ -4316,6 +4346,7 @@ def ask_ai_counselor(
 
 반드시 지킬 원칙:
 1. 먼저 사용자의 질문에 쉬운 말로 직접 답합니다. 어려운 명리 전문용어와 한자 간지는 기본 답변에서 쓰지 않습니다. 꼭 필요하면 쉬운 뜻을 먼저 설명하고 전문용어는 괄호 안에 한 번만 적습니다.
+1-1. 명리 용어를 꼭 써야 한다면 용어만 적지 말고, 바로 이어서 "어떤 성향인지"를 생활 언어로 한 문장 설명합니다. 예: "정관은 규칙과 책임을 중요하게 여기고 신뢰를 쌓으려는 성향입니다."
 2. 나이·성별만으로 성격, 역할, 가족관계, 경제상황을 추측하거나 고정관념을 적용하지 않습니다.
 3. 사용자가 직접 알려준 생활환경과 고민을 가장 중요한 현실 정보로 봅니다. 사주 해석과 실제 상황이 다르면 실제 상황을 우선합니다.
 4. '반드시 된다', '큰돈을 번다', '이혼한다', '병이 생긴다'처럼 미래를 단정하지 않습니다.
@@ -5210,6 +5241,7 @@ def ask_ai_tarot(
 5-1. 어려운 카드나 역방향 카드가 나와도 '나쁜 결과'로 몰지 말고, 조절할 수 있는 부분과 회복의 여지, 지금 취할 수 있는 행동을 반드시 함께 설명합니다.
 5-2. 희망적인 표현을 쓰되 좋은 결과를 확정하거나 보장하지 않습니다.
 6. 사주 정보가 함께 제공되어도 사주와 타로를 '서로 맞다/틀리다'로 판정하지 않고 공통 주제만 참고합니다.
+6-1. 사주 용어가 나오면 용어만 던지지 말고, 그 용어가 생활에서 어떤 성향·행동으로 나타날 수 있는지 바로 풀어서 설명합니다.
 7. 전체 답변은 한국어 650~950자 정도로 간결하게 씁니다.
 
 답변 순서:
@@ -10642,10 +10674,15 @@ try:
             "앞장서야 할 때와 힘을 나눠야 할 때를 구분하면 부담은 줄이고 장점은 더 편안하게 살릴 수 있습니다."
         )
 
+    month_trait = MONTH_RELATION_TRAIT_EXPLANATION.get(
+        month_relation,
+        "여러 행동 방식이 상황에 따라 섞여 나타나는 편",
+    )
     consult_structure = (
         f"생활 방식에서는 {month_plain}이 비교적 눈에 띄는 편입니다. "
-        "누구에게나 자연스럽게 잘되는 방식과 조금 더 연습이 필요한 방식이 함께 있습니다. "
-        "덜 익숙한 부분이 있다고 해서 부족하다는 뜻은 아닙니다. 생활 습관, 경험, 사람 관계를 통해 충분히 보완하고 넓혀갈 수 있습니다."
+        f"쉽게 말하면 **{month_relation}은 {month_trait}**이라고 볼 수 있습니다. "
+        "이 성향은 장점으로 쓰일 때도 있고, 상황에 따라 과해지거나 부족하게 느껴질 때도 있습니다. "
+        "그래서 '나는 원래 이런 사람'으로 단정하기보다 어떤 상황에서 이 특징이 강하게 나오는지 살펴보는 것이 좋습니다."
     )
 
     if not time_known:
@@ -10683,8 +10720,13 @@ try:
         "③ 바로 결론을 내기보다 상대 반응을 본 뒤 다음 거리를 정해보세요."
     )
 
+    daeun_trait = ten_god_trait_text(current_daewoon_ten_god)
+    sewoon_trait = ten_god_trait_text(current_sewoon_ten_god)
     consult_flow = (
-        f"지금의 큰 흐름에서는 {daeun_plain['theme']}이 중요해지고, {current_year}년에는 {sewoon_plain['theme']}을 조금 더 의식해볼 수 있습니다. "
+        f"지금의 큰 흐름은 **{current_daewoon_ten_god}**으로 보는데, 용어만 보면 막연할 수 있습니다. "
+        f"쉽게 말하면 {daeun_trait} "
+        f"{current_year}년의 **{current_sewoon_ten_god}**은 {sewoon_trait} "
+        f"따라서 장기적으로는 {daeun_plain['theme']}을, 올해는 {sewoon_plain['theme']}을 생활 속에서 점검해보는 식으로 활용하면 됩니다. "
         "두 주제가 비슷하면 한 가지를 깊게, 다르면 '장기 방향 1개 + 올해 실행 1개'로 나누어 보세요. "
         "오늘은 가장 마음에 걸리는 문제를 한 문장으로 적고, 이번 주에 확인할 사실 1개와 실행할 행동 1개를 정하는 정도면 충분합니다."
     )
@@ -10785,9 +10827,10 @@ try:
     ]
 
     consult_script = (
-        f"먼저 {client_name}님이 이미 가지고 있는 힘부터 보겠습니다. {day_plain['strength']}이 장점으로 보이고, "
-        f"지금은 {daeun_plain['theme']}을, 올해는 {sewoon_plain['theme']}을 조금 더 의식해보면 좋겠습니다. "
-        "무엇을 당장 크게 바꾸기보다, 이미 잘하고 있는 부분을 살리면서 지금 필요한 한 가지를 함께 찾아보는 방식으로 보겠습니다."
+        f"먼저 {client_name}님이 이미 가지고 있는 힘부터 보겠습니다. {day_plain['strength']}이 장점으로 보입니다. "
+        f"현재 대운의 {current_daewoon_ten_god}은 쉽게 말해 {ten_god_trait_text(current_daewoon_ten_god)} "
+        f"올해 세운의 {current_sewoon_ten_god}은 {ten_god_trait_text(current_sewoon_ten_god)} "
+        "이 용어 자체보다 실제 생활에서 이런 성향이 어떻게 나타나는지를 중심으로 보고, 이미 잘하고 있는 부분을 살리면서 필요한 한 가지를 찾아보겠습니다."
     )
 
     consult_closing = (
@@ -12210,6 +12253,12 @@ try:
             st.metric(f"{current_year}년 세운", current_sewoon_hanja)
             st.caption(f"{current_sewoon_korean} · {current_sewoon_ten_god}")
 
+        st.markdown("#### 💡 용어를 성향으로 풀어보면")
+        st.info(
+            f"**현재 대운 · {current_daewoon_ten_god}** — {ten_god_trait_text(current_daewoon_ten_god)}\n\n"
+            f"**{current_year}년 세운 · {current_sewoon_ten_god}** — {ten_god_trait_text(current_sewoon_ten_god)}"
+        )
+
         comparison_df = pd.DataFrame({
             "구분": ["원국 일간", "현재 대운", "올해 세운"],
             "간지/천간": [day_stem, current_daewoon_hanja, current_sewoon_hanja],
@@ -12260,6 +12309,7 @@ try:
             if selected_info:
                 st.info(
                     f"**{selected_ten_god} — {selected_info['title']}**\n\n"
+                    f"쉽게 말하면: {ten_god_trait_text(selected_ten_god)}\n\n"
                     f"{selected_info['text']}"
                 )
 
