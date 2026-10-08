@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.4"
+APP_VERSION = "3.8.5"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -10969,44 +10969,6 @@ try:
         "이 용어 자체보다 위에서 설명한 성향·생활방식·실행 방향을 먼저 보는 것을 권합니다."
     )
 
-    # -----------------------------------------------------
-    # v3.8.3 : 각 분석 탭 끝에 보여줄 쉬운 종합 총평
-    # -----------------------------------------------------
-    basic_total_summary = (
-        f"{client_name}님은 {day_plain['strength']}이 기본 장점으로 보입니다. "
-        f"{strength_lifestyle} "
-        "기본정보에서는 한자나 오행 숫자 자체보다, 내가 어떤 환경에서 힘이 나고 어떤 상황에서 쉽게 지치는지를 이해하는 것이 핵심입니다."
-    )
-
-    origin_total_summary = (
-        f"{client_name}님의 사주원국을 생활 언어로 요약하면, {day_plain['description']} "
-        f"생활 방식에서는 {month_trait}이 눈에 띄는 편입니다. "
-        f"오행 분포에서 {strongest_element}이 상대적으로 많이, {weakest_element}이 상대적으로 적게 보이지만 "
-        "이 숫자 하나만으로 좋고 나쁨을 판단하지 말고 실제 성향과 생활 경험을 함께 보는 것이 중요합니다."
-    )
-
-    fortune_total_summary = (
-        f"{client_name}님의 현재 큰 흐름은 '{daeun_plain['theme']}', "
-        f"{current_year}년의 초점은 '{sewoon_plain['theme']}'으로 정리할 수 있습니다. "
-        f"앞으로는 {decade_plain} 관련 주제가 반복해서 관심사가 될 수 있으므로, "
-        "큰 결정을 한 번에 내리기보다 작은 시험을 해보고 결과를 확인한 뒤 다음 단계를 정하는 방식이 좋습니다."
-    )
-
-    overall_total_summary = (
-        f"한마디로 정리하면, {client_name}님은 {day_plain['strength']}을 살리면서 "
-        f"지금은 {daeun_plain['theme']}을 중심으로 생활의 기준을 세우는 것이 중요합니다. "
-        f"올해는 {sewoon_plain['theme']}을 먼저 챙기고, "
-        f"앞으로는 {decade_plain}과 관련된 계획을 작은 단계로 시험해보는 방향이 현실적입니다. "
-        "지금 가장 마음에 걸리는 문제 하나를 정하고, 이번 주에 실제로 확인할 사실 1개와 실행할 행동 1개부터 정해보세요."
-    )
-
-    report_total_summary = (
-        f"{client_name}님의 실제 과거·현재·앞으로의 계획을 가장 먼저 놓고 보면, "
-        f"현재는 {daeun_plain['theme']}을 정리하면서 {sewoon_plain['theme']}을 현실적으로 실행해보는 시점으로 볼 수 있습니다. "
-        f"생활에서는 {consult_lifestyle} "
-        f"생각의 기준은 '{consult_mindset}'처럼 잡고, 한 번에 크게 바꾸기보다 오늘·이번 주·이번 달 행동을 이어가는 것이 핵심입니다."
-    )
-
     question_map = {
         "재물": [
             "요즘 돈과 관련해 가장 마음을 편하게 만들고 싶은 부분은 무엇인가요?",
@@ -11077,6 +11039,70 @@ try:
             "이번 주에 할 행동을 20~30분짜리 한 단계로 줄여 달력에 날짜와 시간을 적어두세요.",
             "일주일 뒤 '해본 것·달라진 점·다음 행동'을 한 줄씩 적어 다음 결정을 만들어보세요.",
         ],
+    )
+
+    # -----------------------------------------------------
+    # v3.8.5 : 실제 입력내용 + 구체적 행동을 반영한 종합 총평
+    # -----------------------------------------------------
+    def _short_story(value, fallback, limit=90):
+        cleaned = " ".join(str(value or "").split())
+        if not cleaned:
+            return fallback
+        return cleaned if len(cleaned) <= limit else cleaned[:limit].rstrip() + "…"
+
+    past_short = _short_story(
+        past_story_clean,
+        "과거 경험은 따로 입력되지 않았습니다.",
+    )
+    present_short = _short_story(
+        present_story_clean,
+        "현재 상황은 따로 입력되지 않았습니다.",
+    )
+    future_short = _short_story(
+        future_story_clean,
+        "앞으로의 계획은 따로 입력되지 않았습니다.",
+    )
+
+    basic_total_summary = (
+        f"{client_name}님은 {day_plain['strength']}이 강점으로 보입니다. "
+        f"생활에서는 {month_trait}이 나타나기 쉬운 편입니다. "
+        f"그래서 일을 정할 때는 '내가 직접 통제할 수 있는 일인가', '너무 많은 일을 한꺼번에 맡고 있지는 않은가'를 먼저 확인하는 것이 좋습니다. "
+        f"현재 생활에서는 {consult_actions[0]} "
+        f"이 한 가지를 먼저 해보면 기본 성향을 실제 생활에 연결하는 데 도움이 됩니다."
+    )
+
+    origin_total_summary = (
+        f"{client_name}님의 사주원국은 {day_plain['description']} "
+        f"오행 분포에서는 {strongest_element}이 상대적으로 두드러지고 {weakest_element}이 적게 보입니다. "
+        "이를 단순히 좋고 나쁨으로 보지 말고, 잘하는 방식은 유지하고 부족하게 느껴지는 부분은 환경과 습관으로 보완하는 쪽이 좋습니다. "
+        f"구체적으로는 {consult_lifestyle} "
+        f"그리고 판단할 때는 {consult_mindset}"
+    )
+
+    fortune_total_summary = (
+        f"{client_name}님의 현재 실제 상황은 '{present_short}'입니다. "
+        f"현재 큰 흐름에서는 {daeun_plain['theme']}이, {current_year}년에는 {sewoon_plain['theme']}이 중요하게 보입니다. "
+        f"따라서 지금은 모든 계획을 동시에 밀기보다 가장 시급한 한 가지를 정하고, "
+        f"오늘은 '{consult_actions[0]}', 이번 주는 '{consult_actions[1]}'처럼 단계적으로 움직이는 것이 좋습니다. "
+        f"앞으로의 계획 '{future_short}'도 먼저 작게 시험한 뒤 결과를 보고 확대하세요."
+    )
+
+    overall_total_summary = (
+        f"{client_name}님의 과거는 '{past_short}', 현재는 '{present_short}', 앞으로는 '{future_short}'로 정리됩니다. "
+        f"이 흐름을 함께 보면 지금은 {daeun_plain['theme']}을 중심으로 생활을 정리하면서 "
+        f"{sewoon_plain['theme']}을 실제 행동으로 옮길 때입니다. "
+        f"우선순위는 ① {consult_actions[0]} ② {consult_actions[1]} ③ {consult_actions[2]} 순서가 좋습니다. "
+        "무엇이 맞는지 오래 고민하기보다, 작은 실행을 해보고 결과를 기록한 뒤 다음 결정을 하는 방식이 더 현실적입니다."
+    )
+
+    report_total_summary = (
+        f"{client_name}님은 과거에 '{past_short}'을 경험했고, 현재는 '{present_short}' 상황에 있으며, "
+        f"앞으로 '{future_short}'을 계획하고 있습니다. "
+        f"그래서 앞으로의 상담 방향은 크게 세 가지입니다. "
+        f"첫째, 생활방식은 {consult_lifestyle} "
+        f"둘째, 사고방식은 {consult_mindset} "
+        f"셋째, 실행은 오늘 '{consult_actions[0]}', 이번 주 '{consult_actions[1]}', 이번 달 '{consult_actions[2]}' 순서로 진행해보세요. "
+        "이 총평은 미래를 단정하는 말이 아니라, 현재 계획을 실제 행동으로 옮기기 위한 우선순위를 정리한 것입니다."
     )
 
     consult_encouragement = ENCOURAGEMENT_MAP.get(
@@ -12302,7 +12328,7 @@ try:
         st.divider()
         st.markdown("### ✅ 기본정보 종합 총평")
         st.success(basic_total_summary)
-        st.caption("앞의 한자·오행 숫자를 모두 기억하지 않아도 됩니다. 위 총평만 이해해도 기본 흐름을 잡을 수 있습니다.")
+        st.caption("앞의 한자·오행 숫자를 다 외울 필요는 없습니다. 위 총평의 행동 방향부터 보시면 됩니다.")
 
     # -----------------------------------------------------
     # TAB 2 : 사주원국
@@ -12507,7 +12533,7 @@ try:
         st.divider()
         st.markdown("### ✅ 사주원국 종합 총평")
         st.success(origin_total_summary)
-        st.caption("전문용어보다 '나는 어떤 상황에서 힘이 나고, 어떤 방식으로 행동하는가'를 중심으로 보세요.")
+        st.caption("전문용어보다 '어떤 환경이 잘 맞는지, 무엇을 먼저 바꿔야 하는지'를 중심으로 보세요.")
 
     # -----------------------------------------------------
     # TAB 3 : 대운·세운
@@ -12652,7 +12678,7 @@ try:
         st.divider()
         st.markdown("### ✅ 대운·세운 종합 총평")
         st.success(fortune_total_summary)
-        st.caption("대운·세운은 미래 사건을 확정하는 예언이 아니라, 지금과 앞으로 무엇을 준비할지 보는 참고 흐름입니다.")
+        st.caption("대운·세운은 사건 예언보다 '지금 무엇을 먼저 하고, 어떤 계획은 작게 시험할지'를 정하는 참고 흐름입니다.")
 
     # -----------------------------------------------------
     # TAB 4 : 종합풀이
@@ -12759,7 +12785,7 @@ try:
         st.divider()
         st.markdown("### ✅ 종합풀이 최종 총평")
         st.success(overall_total_summary)
-        st.caption("앞의 ①~⑩ 내용을 다 기억하지 않아도 됩니다. 이 총평을 먼저 이해하고 필요한 항목만 다시 보시면 됩니다.")
+        st.caption("앞의 ①~⑩을 다 이해하지 못해도 괜찮습니다. 이 총평의 우선순위 ①→②→③만 먼저 실행해보세요.")
 
         st.markdown("### 💾 보고서 저장")
 
