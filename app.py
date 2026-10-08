@@ -81,7 +81,7 @@ except ImportError:
     OpenAI = None
 
 
-APP_VERSION = "3.8.1"
+APP_VERSION = "3.8.2"
 
 # v3.2.8 final polish: 메인 사진 확대, 문구 통일, 자동번역 방지 힌트 적용
 
@@ -4366,6 +4366,9 @@ def ask_ai_counselor(
     life_stage,
     family_context,
     life_context,
+    past_story,
+    present_story,
+    future_story,
     category,
     question,
     history,
@@ -4404,7 +4407,9 @@ def ask_ai_counselor(
 1-2. 상담 대상의 이름이 제공되면 "상담 받는 분", "사용자", "고객님", "사용자님" 같은 일반 호칭을 쓰지 말고 반드시 이름+님으로 통일합니다. 한 답변에서 2~4회 정도 자연스럽게 호명하되 매 문장마다 반복하지 않습니다.
 1-3. 답변의 중심은 전문용어 설명이 아니라 과거에 반복되기 쉬운 방식, 현재 상황, 앞으로의 선택 방향, 생활방식, 사고방식, 구체적인 실행입니다.
 2. 나이·성별만으로 성격, 역할, 가족관계, 경제상황을 추측하거나 고정관념을 적용하지 않습니다.
-3. 사용자가 직접 알려준 생활환경과 고민을 가장 중요한 현실 정보로 봅니다. 사주 해석과 실제 상황이 다르면 실제 상황을 우선합니다.
+3. 사용자가 직접 알려준 과거·현재·앞으로의 계획을 가장 중요한 현실 정보로 봅니다. 사주 해석과 실제 상황이 다르면 반드시 실제 상황을 우선합니다.
+3-1. 사용자가 적은 과거 사실을 사주가 맞혔다고 표현하지 않습니다. 사용자가 직접 제공한 사실이라고 분명히 인식하고, 그 경험에서 반복된 행동 패턴과 선택 기준을 정리하는 데만 사주를 참고합니다.
+3-2. 사용자가 적은 앞으로의 계획에 대해서는 성공 여부를 예언하지 말고, 준비 조건·작은 시험·확인 지표·중단 또는 수정 기준을 구체적으로 제시합니다.
 4. '반드시 된다', '큰돈을 번다', '이혼한다', '병이 생긴다'처럼 미래를 단정하지 않습니다.
 5. 답변은 불안을 키우지 말고 강점, 선택지, 준비 방법, 작게 실천할 행동을 중심으로 씁니다.
 5-1. 현실적으로 어려운 점이 있더라도 반드시 '그래도 내가 바꿀 수 있는 부분', '회복하거나 준비할 수 있는 가능성', '다음에 해볼 작은 행동' 중 하나 이상을 함께 제시합니다.
@@ -4447,7 +4452,12 @@ def ask_ai_counselor(
 [이용 형태와 재방문 맥락]
 {customer_context}
 
-[사용자가 직접 알려준 현재 상황]
+[사용자가 직접 알려준 삶의 정보 — 사주보다 우선]
+- 과거에 해온 일·경험: {_clip_ai_text(past_story, 700) or "(입력 없음)"}
+- 현재 하고 있는 일·가장 신경 쓰이는 문제: {_clip_ai_text(present_story, 700) or "(입력 없음)"}
+- 앞으로 해보고 싶은 일·계획: {_clip_ai_text(future_story, 700) or "(입력 없음)"}
+
+[현재 생활 맥락]
 - 생활 단계: {life_stage}
 - 가족·관계 환경: {family_context}
 - 생활환경 및 고민 배경: {life_text}
@@ -9262,7 +9272,7 @@ with st.sidebar:
             "출생시간을 모르면 '출생시간을 모름'을 체크해 시진 후보 비교 기능을 사용할 수 있습니다."
         )
         st.caption(
-            "🔐 '상담 내용 보호'는 고객 식별 DB에 생년월일·상담 질문·AI 답변 원문을 저장하지 않는다는 뜻입니다."
+            "🔐 '상담 내용 보호'는 고객 식별 DB에 생년월일·과거/현재/앞으로 입력 내용·상담 질문·AI 답변 원문을 저장하지 않는다는 뜻입니다."
         )
 
     st.divider()
@@ -9940,6 +9950,31 @@ with st.form("saju_input_form"):
                 "출생시간 미상: 내부 계산은 날짜 확인을 위해 정오(12:00)를 임시 기준으로 사용하지만, "
                 "시주와 시주 의존 분석은 결과에서 제외합니다."
             )
+
+    st.markdown("### 📝 상담을 더 정확하게 받기 위한 3가지 질문")
+    st.caption(
+        "선택 입력입니다. 실제로 살아온 경험과 현재 상황을 알려주시면 "
+        "사주 용어보다 현실 이야기를 중심으로 풀이합니다."
+    )
+
+    past_story = st.text_area(
+        "1. 과거에는 주로 어떤 일을 해오셨나요? 기억에 남는 변화나 어려움이 있었다면 함께 적어주세요.",
+        key="past_story",
+        height=100,
+        placeholder="예: 회사에서 30년 근무했고, 2년 전에 은퇴했습니다. 중간에 부서 이동과 사업 실패 경험이 있었습니다.",
+    )
+    present_story = st.text_area(
+        "2. 현재는 무엇을 하고 계시며, 지금 가장 신경 쓰이는 문제는 무엇인가요?",
+        key="present_story",
+        height=100,
+        placeholder="예: 은퇴 후 쉬면서 유튜브를 배우고 있습니다. 체력과 수입, 가족의 반응이 걱정됩니다.",
+    )
+    future_story = st.text_area(
+        "3. 앞으로 해보고 싶은 일이나 계획은 무엇인가요? 1년 안에 이루고 싶은 것이 있다면 적어주세요.",
+        key="future_story",
+        height=100,
+        placeholder="예: 유튜브를 꾸준히 운영해 작은 수입을 만들고, 사람들과 교류하는 활동도 시작하고 싶습니다.",
+    )
 
     submitted = st.form_submit_button("🔮 사주 분석하기", width="stretch")
 
@@ -10685,6 +10720,14 @@ try:
 
     client_name = normalize_client_name(name)
 
+    past_story_clean = str(past_story or "").strip()
+    present_story_clean = str(present_story or "").strip()
+    future_story_clean = str(future_story or "").strip()
+
+    past_story_display = past_story_clean or "과거 경험은 별도로 입력하지 않았습니다."
+    present_story_display = present_story_clean or "현재 상황은 별도로 입력하지 않았습니다."
+    future_story_display = future_story_clean or "앞으로의 계획은 별도로 입력하지 않았습니다."
+
     report_summary = (
         f"{client_name}님의 일간은 {info['name']}이며, "
         f"현재 대운은 {current_daewoon_hanja}, "
@@ -10843,24 +10886,47 @@ try:
             "무조건 앞장서거나 무조건 기대기보다, 일의 크기와 내 체력에 따라 역할을 나누는 방식이 잘 맞습니다."
         )
 
-    consult_past = (
-        f"**{client_name}님의 과거에 반복되기 쉬운 방식**을 보면, {day_plain['description']} "
-        f"또한 {month_trait}이 생활 속에서 반복됐을 가능성을 참고해볼 수 있습니다. "
-        "실제 과거 사건을 사주만으로 단정할 수는 없지만, 힘든 일이 생겼을 때 내가 혼자 해결하려 했는지, "
-        "주변 도움을 잘 활용했는지, 결정을 오래 미뤘는지를 돌아보면 앞으로의 선택 기준을 찾는 데 도움이 됩니다."
-    )
+    if past_story_clean:
+        consult_past = (
+            f"**{client_name}님이 직접 알려준 과거**: {past_story_clean} "
+            f"이 경험을 바탕으로 보면, {day_plain['description']} 같은 성향이 어떤 상황에서 장점으로 쓰였고 "
+            "어떤 때 부담이 되었는지를 돌아보는 것이 중요합니다. "
+            "사주가 과거를 대신 설명하는 것이 아니라, 실제 경험에서 반복된 선택 방식과 대처 방식을 찾는 데 참고로 활용합니다."
+        )
+    else:
+        consult_past = (
+            f"{client_name}님이 과거 경험을 따로 적지 않아 사주만으로 사건을 추측하지 않습니다. "
+            f"다만 성향 참고로는 {day_plain['description']} "
+            "과거에 중요한 선택을 할 때 혼자 결정했는지, 주변 도움을 활용했는지, 결정 후 어떤 결과가 있었는지를 떠올려보면 좋습니다."
+        )
 
-    consult_present = (
-        f"**지금의 {client_name}님**에게 가장 중요한 것은 '{daeun_plain['theme']}'과 "
-        f"'{sewoon_plain['theme']}'을 현실 생활에서 어떻게 조절하느냐입니다. "
-        f"{consult_flow}"
-    )
+    if present_story_clean:
+        consult_present = (
+            f"**{client_name}님이 직접 알려준 현재 상황**: {present_story_clean} "
+            f"지금의 사주 흐름에서는 {daeun_plain['theme']}과 {sewoon_plain['theme']}을 참고할 수 있습니다. "
+            "하지만 실제 판단은 현재의 시간·체력·수입·가족 상황·이미 하고 있는 일을 먼저 기준으로 삼는 것이 좋습니다. "
+            "지금 가장 답답한 문제 하나를 정하고, 내가 바꿀 수 있는 부분과 당장 바꾸기 어려운 부분을 나누어 보세요."
+        )
+    else:
+        consult_present = (
+            f"{client_name}님이 현재 상황을 따로 적지 않아 구체적인 생활 조건을 단정하지 않습니다. "
+            f"사주 흐름에서는 {daeun_plain['theme']}과 {sewoon_plain['theme']}을 참고할 수 있으므로, "
+            "현재 가장 신경 쓰이는 문제와 실제 제약 조건을 함께 적어보면 상담이 훨씬 구체적으로 바뀝니다."
+        )
 
-    consult_future = (
-        f"**앞으로의 {client_name}님**은 {decade_plain}을 중심으로 경험을 쌓아갈 가능성을 참고해볼 수 있습니다. "
-        f"{consult_decade} "
-        "큰 결정을 한 번에 내리기보다 1개월 시험, 3개월 점검처럼 기간을 정해 확인하면서 움직이는 방식이 안전합니다."
-    )
+    if future_story_clean:
+        consult_future = (
+            f"**{client_name}님이 직접 알려준 앞으로의 계획**: {future_story_clean} "
+            f"앞으로는 {decade_plain}과 관련된 주제가 반복해서 관심사가 될 수 있으므로, "
+            "계획을 한 번에 크게 실행하기보다 1개월 시험 → 3개월 점검 → 계속할지 수정할지 결정하는 방식이 좋습니다. "
+            "목표를 결과 하나로만 잡지 말고, 이번 달에 확인할 숫자나 행동 횟수도 함께 정해보세요."
+        )
+    else:
+        consult_future = (
+            f"{client_name}님이 앞으로의 계획을 따로 적지 않아 미래 목표를 임의로 정하지 않습니다. "
+            f"다만 {decade_plain}과 관련된 주제가 관심사로 이어질 수 있으므로, "
+            "하고 싶은 일을 하나 적고 '이번 달에 시험해볼 가장 작은 행동'부터 정해보는 것이 좋습니다."
+        )
 
     lifestyle_map = {
         "재물": "생활비·고정비·선택지출을 분리해 관리하고, 큰 지출은 바로 결정하지 않는 습관을 만들어보세요.",
@@ -10880,10 +10946,21 @@ try:
         strongest_theme,
         "수면·식사·일정 같은 기본 생활 리듬을 일정하게 유지하고, 중요한 일은 한 번에 하나씩 처리하는 방식을 권합니다.",
     )
+    if present_story_clean:
+        consult_lifestyle = (
+            f"{client_name}님의 현재 상황인 '{present_story_clean}'을 기준으로 보면, "
+            + consult_lifestyle
+        )
+
     consult_mindset = mindset_map.get(
         strongest_theme,
         "결과를 미리 확정하려 하기보다 지금 확인할 수 있는 사실과 내가 바꿀 수 있는 행동을 나누어 생각해보세요.",
     )
+    if future_story_clean:
+        consult_mindset = (
+            f"{client_name}님이 계획한 '{future_story_clean}'을 생각할 때는, "
+            + consult_mindset
+        )
 
     technical_brief = (
         f"전문용어는 참고로만 보면 됩니다. "
@@ -11118,6 +11195,11 @@ try:
 입력 생년월일: {input_birth_text}
 출생시간: {report_birth_time_text}
 
+[{client_name}님이 직접 알려준 삶의 정보]
+과거: {past_story_display}
+현재: {present_story_display}
+앞으로: {future_story_display}
+
 [한 문장으로 보는 {client_name}님]
 {consult_opening}
 
@@ -11169,6 +11251,11 @@ try:
 출생시간: {report_birth_time_text}
 성별: {gender}
 출생지역: {city}
+
+[{client_name}님이 직접 알려준 삶의 정보]
+과거: {past_story_display}
+현재: {present_story_display}
+앞으로: {future_story_display}
 
 [상담 시작]
 {consult_script}
@@ -12656,6 +12743,12 @@ try:
             unsafe_allow_html=True,
         )
 
+        st.markdown(f"### 🗣️ {client_name}님이 직접 알려준 이야기")
+        st.markdown(f"**과거** — {past_story_display}")
+        st.markdown(f"**현재** — {present_story_display}")
+        st.markdown(f"**앞으로** — {future_story_display}")
+        st.caption("이 세 가지 실제 정보가 사주 해석보다 우선하며, 아래 상담은 이 내용을 중심으로 정리합니다.")
+
         st.markdown(f"### 🌟 {client_name}님, 먼저 이것만 보세요")
         st.info(f"**강점** — {safe_points[0].split('|', 1)[-1].strip()}")
         st.info(f"**현재 큰 방향** — {safe_points[1].split('|', 1)[-1].strip()}")
@@ -12858,6 +12951,27 @@ try:
                 )
         else:
             st.success(f"AI 연결 준비 완료 · 사용 모델: {ai_model}")
+
+        st.markdown("### 🧭 과거 · 현재 · 앞으로")
+        st.caption("사주 분석 때 입력한 내용을 불러왔습니다. 필요하면 여기서 수정해 AI 상담에 반영할 수 있습니다.")
+        ai_past_story = st.text_area(
+            "과거에 해온 일·경험",
+            value=past_story_clean,
+            key="ai_past_story",
+            height=90,
+        )
+        ai_present_story = st.text_area(
+            "현재 하고 있는 일·가장 신경 쓰이는 문제",
+            value=present_story_clean,
+            key="ai_present_story",
+            height=90,
+        )
+        ai_future_story = st.text_area(
+            "앞으로 해보고 싶은 일·계획",
+            value=future_story_clean,
+            key="ai_future_story",
+            height=90,
+        )
 
         st.markdown("### 🧩 현재 생활 상황")
         c1, c2 = st.columns(2)
@@ -13108,6 +13222,9 @@ try:
                             life_stage=ai_life_stage,
                             family_context=ai_family_context,
                             life_context=ai_life_context,
+                            past_story=ai_past_story,
+                            present_story=ai_present_story,
+                            future_story=ai_future_story,
                             category=ai_category,
                             question=ai_question,
                             history=history,
